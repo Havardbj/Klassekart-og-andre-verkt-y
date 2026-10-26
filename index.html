@@ -381,7 +381,6 @@ body.romredigering .verktoy,body.romredigering .status{display:none}
 .tidtaker.innebygd .tid-oppgaver button{padding:7px 12px;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.06);border-color:transparent}
 .sete.med-rolle{flex-direction:column;line-height:1.15;gap:.05em;white-space:normal}
 .sete .rolle{font-size:.72em;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.sete .pin{font-size:.75em;margin-right:.25em;flex:none}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#1f2937;color:#fff;padding:10px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
 .toast.vis{opacity:1;transform:translate(-50%,0)}
 .toast.feil{background:var(--bad)}
@@ -679,7 +678,7 @@ body.mobil .sete.ledig{font-size:.8em}
             <div class="felt">
                 <span class="felt-tittel" id="fasteTittel">📌 Faste plasser</span>
                 <p class="hjelp">For eksempel foran på grunn av syn eller hørsel. Gjelder klassekartet i dette oppsettet.</p>
-                <div class="regelliste" id="fasteListe"></div>
+                <div class="regelliste sensitiv" id="fasteListe" tabindex="0"></div>
             </div>
         </section>
 
@@ -847,14 +846,14 @@ body.mobil .sete.ledig{font-size:.8em}
                 <li>Backup-filen inneholder personopplysninger om elever. Oppbevar den som annen elevinformasjon, for eksempel i skolens OneDrive, ikke i privat e-post.</li>
                 <li>Elevbilder (fra PDF-import eller kamera) lagres som små miniatyrer bare på enheten. Du velger selv om de skal være med i backupen, og kan slette dem under Elever.</li>
                 <li>Tømmer du nettleserdata på enheten, slettes også klassene. Ta backup jevnlig.</li>
-                <li>Opplysninger om nivå og hvem som skal holdes adskilt, er uskarpe på skjermen til du holder over eller trykker på dem, så de ikke vises når skjermen er delt med klassen.</li>
+                <li>Opplysninger om nivå, faste plasser og hvem som skal holdes adskilt, er uskarpe på skjermen til du holder over eller trykker på dem, så de ikke vises når skjermen er delt med klassen.</li>
             </ul>
             <p>Appen virker også uten nett når den er åpnet én gang.</p>
             <div class="info-fare">
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.1</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1501,7 +1500,7 @@ function tegnRegler() {
     fl.innerHTML = "";
     const fr = rom(), aktiveB = aktiveBord(fr), faste = Object.keys(fr.faste || {}).sort((a, b) => a.localeCompare(b, "no"));
     $("fasteTittel").textContent = `📌 Faste plasser i «${fr.navn}»`;
-    if (!faste.length) fl.append(el("p", "tom-liste", "Ingen faste plasser. Trykk på en elev i kartet og velg «📌 Fast plass her»."));
+    if (!faste.length) fl.append(el("p", "tom-liste", "Ingen faste plasser. Trykk på en elev i kartet og så på 📌. Faste plasser vises ikke i kartet."));
     for (const n of faste) {
         const f = fr.faste[n];
         const rad = el("div", "regel");
@@ -2765,8 +2764,6 @@ function tegnRomkart() {
             } else if (navn) {
                 s.append(el("span", null, navn));
                 s.classList.add("elev");
-                const fp = r.faste && r.faste[navn];
-                if (fp && fp.id === id && fp.i === i) { s.prepend(el("span", "pin", "📌")); s.title = "Fast plass"; }
                 if (avs && avs.sist === navn) s.classList.add("avslort");
                 const borte = frav.has(navn);
                 if (borte) s.classList.add("fravaer");
@@ -2882,8 +2879,10 @@ function visValg() {
     if (valgt.type === "kart") {
         const r = rom(), f = r.faste[valgt.navn];
         const her = f && f.id === valgt.id && f.i === valgt.i;
-        const b3 = el("button", "knapp liten", her ? "📌 Fjern fast plass" : (f ? "📌 Flytt fast plass hit" : "📌 Fast plass her"));
+        // Nøytral knapp: om eleven har fast plass, skal ikke synes på tavla
+        const b3 = el("button", "knapp liten", "📌");
         b3.type = "button";
+        b3.title = her ? "Fjern fast plass" : (f ? "Flytt fast plass hit" : "Gi eleven fast plass her");
         b3.addEventListener("click", e => {
             e.stopPropagation();
             const n = valgt.navn, pos = { id: valgt.id, i: valgt.i };
@@ -2893,7 +2892,7 @@ function visValg() {
                 r.faste[n] = pos;
             }
             avbrytValg(); lagre(); tegnRegler(); tegnKart();
-            visToast(her ? `${n} har ikke lenger fast plass.` : `${n} sitter alltid her i «${r.navn}».`);
+            visToast("Lagret. Se Regler → Faste plasser.");
         });
         linje.append(b3);
     }
@@ -3748,7 +3747,7 @@ function elevArk(inn, navn) {
             inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📌 Fast plass", mEl("small", null, `Bord ${nr}${side} i «${r.navn}»`)),
                 mKnapp("Fjern", "m-tag", () => { delete r.faste[navn]; lagre(); tegnRegler(); tegnKart(); byggArk(); })));
         } else {
-            inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📌 Fast plass", mEl("small", null, "Velg eleven i Kart og trykk «📌 Fast plass her»")), mEl("span", { class: "m-pil" }, "–")));
+            inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📌 Fast plass", mEl("small", null, "Trykk på eleven i Kart og så på 📌")), mEl("span", { class: "m-pil" }, "–")));
         }
     }
     const niva = k.interesse[navn] || "";
