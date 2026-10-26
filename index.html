@@ -211,7 +211,7 @@ textarea{width:100%;resize:vertical;line-height:1.45}
 .bord.skjult{visibility:hidden}
 .rom.rediger .bord{cursor:pointer}
 .rom.rediger .bord:hover{box-shadow:0 0 0 3px rgba(29,111,184,.35)}
-.rom.rediger .bord.skjult{visibility:visible;opacity:.4;background:#e5e7eb!important;border-style:dashed}
+.rom.rediger .bord.skjult{visibility:visible;opacity:.28;background:#e5e7eb!important;border-style:dashed}
 .rom.rediger .sete{pointer-events:none}
 .roter{position:absolute;top:-.95em;right:-.95em;width:2em;height:2em;border-radius:50%;border:1px solid #c7ccd4;background:#fff;cursor:pointer;font-size:1em;box-shadow:0 1px 3px rgba(0,0,0,.2);z-index:2}
 .roter:hover{background:var(--accent-soft)}
@@ -319,6 +319,20 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
 .info-tips{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px}
 .info-fare{background:var(--bad-soft);border:1px solid #f3c1bb;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:10px}
 .info-versjon{color:var(--muted);font-size:12px}
+.rom-editor{background:#fff;border:1px solid #f1c75b;border-radius:12px;padding:10px 12px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);flex:none}
+.re-rad{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.re-tittel{font-size:15px}
+.stepper{display:flex;align-items:center;gap:4px}
+.stepper span{color:var(--muted);font-size:13px;margin-right:3px}
+.stepper button{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:19px;line-height:1;cursor:pointer;padding:0}
+.stepper button:hover{background:#f3f4f6}
+.stepper input{width:3.2em;text-align:center;padding:6px 4px}
+.rom-editor .malknapp{flex-direction:row;padding:4px 10px 4px 6px;gap:6px;font-size:13px}
+.rom-editor .malknapp svg{width:34px;height:26px}
+.re-info{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--muted)}
+.re-info .kapasitet{padding:4px 9px;font-size:12.5px;color:var(--ink)}
+.rom-editor .meny-innhold{left:0}
+body.romredigering .verktoy,body.romredigering .status{display:none}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#1f2937;color:#fff;padding:10px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
 .toast.vis{opacity:1;transform:translate(-50%,0)}
 .toast.feil{background:var(--bad)}
@@ -326,31 +340,41 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
 @supports (height:100dvh){ body{height:100dvh} }
 .topp{padding-top:max(10px, env(safe-area-inset-top));padding-left:max(18px, env(safe-area-inset-left));padding-right:max(18px, env(safe-area-inset-right))}
 .kun-mobil{display:none!important}
-@media (max-width:700px){
+@media (max-width:900px){
     .kun-mobil{display:inline-flex!important}
     .panel-lukk.kun-mobil{display:block!important}
-    .ikke-mobil,.etikett,#btnMeny,.lagret,.merke{display:none!important}
+    #btnMeny{display:none!important}
+    .arbeidsflate{flex-direction:column}
+    .panel{position:fixed;left:0;right:0;top:var(--topp-h, 56px);bottom:0;width:auto;max-height:none;z-index:95;border:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .panel-lukk{padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff}
+    body.uten-meny .panel{display:none}
+    .hoved{padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+}
+@media (max-width:700px){
+    .ikke-mobil,.etikett,.lagret,.merke{display:none!important}
     .topp{gap:6px;padding:8px 10px;padding-top:max(8px, env(safe-area-inset-top));flex-wrap:nowrap}
     .klassevelger{flex:1;min-width:0}
     .klassevelger select{min-width:0;flex:1;width:100%}
     .meny-innhold{left:auto;right:0}
-    .arbeidsflate{flex-direction:column}
-    .panel{position:fixed;left:0;right:0;top:var(--topp-h, 56px);bottom:0;width:auto;max-height:none!important;z-index:95;border:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-    .panel-lukk{padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff}
-    body.uten-meny .panel{display:none}
-    .hoved{padding:10px 10px calc(10px + env(safe-area-inset-bottom));overflow:auto}
-    .kart-ramme{flex:none}
-    .verktoy{gap:6px}
+    .hoved{padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+    .verktoy{gap:6px;margin-bottom:8px}
     .modus{flex:1 1 100%}
-    .modusknapp{flex:1;padding:9px 6px}
-    .knapp.stor{flex:1;justify-content:center;padding:10px 12px}
-    .oppsettvelger{font-size:0;flex:1 1 40%;min-width:0}   /* skjuler ordene «Fordeling»/«Oppsett» – valgene står side om side */
+    .modusknapp{flex:1;padding:8px 6px}
+    .knapp.stor{flex:1;justify-content:center;padding:9px 12px}
+    .oppsettvelger{font-size:0;flex:1 1 30%;min-width:0}   /* skjuler ordene «Fordeling»/«Oppsett» – valgene står side om side */
     .oppsettvelger select{font-size:14px;width:100%;min-width:0}
     .gruppevelger{flex:1 1 40%}
     .gruppevelger select{flex:1;min-width:0}
     .hjulvelger{flex-wrap:wrap}
-    .status-linje{font-size:13px;padding:7px 10px}
+    .status{margin-bottom:8px;gap:4px}
+    .status-linje{font-size:13px;padding:6px 10px}
+    .status-linje.dempet{display:none}
     .kart-ark{min-width:0;padding:1.2em 1.2em 1.6em}
+    .rom-editor{padding:8px 10px;gap:7px}
+    .re-rad{gap:6px 8px}
+    .stepper span{font-size:12px}
+    .stepper button{width:32px;height:32px}
+    .re-info span:last-child{display:none}
     .tidtaker{left:10px;right:10px;width:auto;bottom:calc(10px + env(safe-area-inset-bottom))}
     .tid-visning{font-size:58px}
     .avslor{top:calc(8px + env(safe-area-inset-top))}
@@ -361,20 +385,13 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
     .valg-linje{left:10px;right:10px;transform:none;max-width:none;bottom:calc(10px + env(safe-area-inset-bottom))}
     .valg-tekst{flex-basis:100%;text-align:center}
 }
-@media (max-width:900px){
-    .arbeidsflate{flex-direction:column}
-    .panel{width:100%;border-right:none;border-bottom:1px solid var(--line);max-height:50vh}
-    .topp{flex-wrap:wrap}
-    .hoved{overflow:auto}
-    .kart-ramme{flex:none}
-}
 
 @page{size:landscape;margin:10mm}
 @media print{
     body{background:#fff;display:block;height:auto}
     .topp,.panel,.verktoy,.status,.tavle-kontroller,.toast,.roter{display:none!important}
     .arbeidsflate,.hoved,.kart-ramme{display:block;overflow:visible;padding:0}
-    .kart-ark{box-shadow:none;padding:0;font-size:12px!important;outline:none!important;background:#fff!important}
+    .kart-ark{box-shadow:none;padding:0;font-size:12px!important;transform:none!important;margin:0 auto!important;outline:none!important;background:#fff!important}
     .bord,.sete,.tavle{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .sete.fravaer{text-decoration:none;opacity:1;font-style:normal}
 }
@@ -416,7 +433,6 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
         <nav class="faner">
             <button type="button" class="fane" data-fane="elever">Elever</button>
             <button type="button" class="fane" data-fane="regler">Regler <span class="tall" id="tallRegler" hidden></span></button>
-            <button type="button" class="fane" data-fane="rom">Rom</button>
             <button type="button" class="fane" data-fane="fordeling">Nivå</button>
         </nav>
 
@@ -462,52 +478,6 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
             </div>
         </section>
 
-        <!-- ROM -->
-        <section class="faneinnhold" data-fane="rom" hidden>
-            <div class="felt">
-                <span class="oppsett-navn" id="romNavn"></span>
-                <div class="oppsett-hode">
-                    <button type="button" class="knapp liten" id="btnNyttOppsett" title="Lag et nytt oppsett for samme klasse">+ Nytt</button>
-                    <button type="button" class="knapp liten" id="btnGiNavnOppsett">Gi nytt navn</button>
-                    <button type="button" class="knapp liten" id="btnSlettOppsett">Slett</button>
-                </div>
-                <p class="hjelp">En klasse kan ha flere oppsett, for eksempel vanlige pulter og grupper på 3. Bytt oppsett øverst over kartet.</p>
-            </div>
-            <div class="tallfelt">
-                <div class="felt"><label for="romRader">Rader</label><input type="number" id="romRader" min="1" max="12"></div>
-                <div class="felt"><label for="romPulter">Bord per rad</label><input type="number" id="romPulter" min="1" max="12"></div>
-            </div>
-            <div class="felt">
-                <label for="romSeter">Plasser per bord</label>
-                <select id="romSeter">
-                    <option value="1">1 – enkeltpult</option>
-                    <option value="2">2 – dobbeltpult</option>
-                    <option value="3">3 – gruppe på 3</option>
-                    <option value="4">4 – gruppe på 4</option>
-                    <option value="5">5 – gruppe på 5</option>
-                    <option value="6">6 – gruppe på 6</option>
-                </select>
-                <p class="hjelp">Med grupper fordeles elevene jevnt, så ingen gruppe blir mye mindre enn de andre.</p>
-            </div>
-            <div class="felt">
-                <span class="felt-tittel">Hurtigoppsett</span>
-                <div class="maler">
-                    <button type="button" class="malknapp" data-mal="rekker"><svg viewBox="0 0 40 30"><rect x="6" y="2" width="28" height="3" rx="1" class="t"/><rect x="5" y="10" width="8" height="4" rx="1"/><rect x="16" y="10" width="8" height="4" rx="1"/><rect x="27" y="10" width="8" height="4" rx="1"/><rect x="5" y="17" width="8" height="4" rx="1"/><rect x="16" y="17" width="8" height="4" rx="1"/><rect x="27" y="17" width="8" height="4" rx="1"/><rect x="5" y="24" width="8" height="4" rx="1"/><rect x="16" y="24" width="8" height="4" rx="1"/><rect x="27" y="24" width="8" height="4" rx="1"/></svg><span>Rekker</span></button>
-                    <button type="button" class="malknapp" data-mal="hestesko"><svg viewBox="0 0 40 30"><rect x="6" y="2" width="28" height="3" rx="1" class="t"/><rect x="4" y="9" width="4" height="5" rx="1"/><rect x="32" y="9" width="4" height="5" rx="1"/><rect x="4" y="16" width="4" height="5" rx="1"/><rect x="32" y="16" width="4" height="5" rx="1"/><rect x="4" y="24" width="7" height="4" rx="1"/><rect x="12.5" y="24" width="7" height="4" rx="1"/><rect x="21" y="24" width="7" height="4" rx="1"/><rect x="29" y="24" width="7" height="4" rx="1"/></svg><span>Hestesko</span></button>
-                </div>
-                <p class="hjelp">Rader og bord tilpasses antall elever. Tips: Lag et eget oppsett med «+ Nytt» først, så beholder du det vanlige og kan bytte tilbake etter jul.</p>
-            </div>
-            <div class="kapasitet" id="kapasitet"></div>
-            <div class="felt" id="romValgFelt">
-                <label class="bryter"><input type="checkbox" id="fyllFremst"><span>Fyll bordene nærmest tavla først<small>Slått av: de ledige plassene havner tilfeldig i rommet.</small></span></label>
-                <label class="bryter"><input type="checkbox" id="adskillNaboer"><span>Hold adskilte elever unna nabobord<small>Gjelder bordet ved siden av og bordet foran og bak, ikke bare samme bord.</small></span></label>
-            </div>
-            <div class="felt">
-                <button type="button" class="knapp full" id="btnRedigerRom">✏️ Tilpass bordene i kartet</button>
-                <p class="hjelp">Fjern bord som ikke finnes i rommet, og roter pulter som står på skrå eller langs veggen.</p>
-            </div>
-        </section>
-
         <!-- FORDELING -->
         <section class="faneinnhold" data-fane="fordeling" hidden>
             <div class="felt" id="nivaBoks">
@@ -539,6 +509,7 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
                 </select>
             </label>
             <label class="oppsettvelger" id="oppsettVelger">Oppsett <select id="oppsettValg"></select></label>
+            <button type="button" class="knapp" id="btnRedigerRom" title="Endre rader, bord, hestesko og plassering av pulter">✏️ Rom</button>
             <span class="gruppevelger" id="gruppeVelger" hidden>
                 <select id="gruppeModus" aria-label="Hvordan gruppene deles">
                     <option value="storrelse">Grupper på</option>
@@ -552,6 +523,43 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
                 <button type="button" class="knapp" id="btnLyd" title="Slå lyd av/på">🔊</button>
             </span>
             <div class="fyll"></div>
+        </div>
+        <div class="rom-editor" id="romEditor" hidden>
+            <div class="re-rad">
+                <b class="re-tittel">✏️ Rom</b>
+                <select id="oppsettValg2" aria-label="Oppsett"></select>
+                <details class="meny" id="oppsettMeny">
+                    <summary class="knapp liten" title="Nytt oppsett, gi nytt navn, slett">⋯</summary>
+                    <div class="meny-innhold">
+                        <button type="button" id="btnNyttOppsett">➕ Nytt oppsett (kopi av dette)</button>
+                        <button type="button" id="btnGiNavnOppsett">✏️ Gi oppsettet nytt navn</button>
+                        <button type="button" id="btnSlettOppsett" class="fare">🗑️ Slett oppsettet</button>
+                    </div>
+                </details>
+                <span class="fyll"></span>
+                <button type="button" class="knapp primar" id="btnRomFerdig">✓ Ferdig</button>
+            </div>
+            <div class="re-rad">
+                <div class="stepper"><span>Rader</span><button type="button" data-steg="romRader" data-d="-1" aria-label="Færre rader">−</button><input type="number" id="romRader" min="1" max="12" inputmode="numeric"><button type="button" data-steg="romRader" data-d="1" aria-label="Flere rader">+</button></div>
+                <div class="stepper"><span>Bord per rad</span><button type="button" data-steg="romPulter" data-d="-1" aria-label="Færre bord per rad">−</button><input type="number" id="romPulter" min="1" max="12" inputmode="numeric"><button type="button" data-steg="romPulter" data-d="1" aria-label="Flere bord per rad">+</button></div>
+                <div class="stepper"><span>Bord</span>
+                    <select id="romSeter" aria-label="Plasser per bord">
+                        <option value="1">Enkeltpult</option>
+                        <option value="2">Dobbeltpult</option>
+                        <option value="3">Gruppebord 3</option>
+                        <option value="4">Gruppebord 4</option>
+                        <option value="5">Gruppebord 5</option>
+                        <option value="6">Gruppebord 6</option>
+                    </select>
+                </div>
+            </div>
+            <div class="re-rad">
+                <button type="button" class="malknapp" data-mal="rekker"><svg viewBox="0 0 40 30"><rect x="6" y="2" width="28" height="3" rx="1" class="t"/><rect x="5" y="10" width="8" height="4" rx="1"/><rect x="16" y="10" width="8" height="4" rx="1"/><rect x="27" y="10" width="8" height="4" rx="1"/><rect x="5" y="17" width="8" height="4" rx="1"/><rect x="16" y="17" width="8" height="4" rx="1"/><rect x="27" y="17" width="8" height="4" rx="1"/><rect x="5" y="24" width="8" height="4" rx="1"/><rect x="16" y="24" width="8" height="4" rx="1"/><rect x="27" y="24" width="8" height="4" rx="1"/></svg><span>Rekker</span></button>
+                <button type="button" class="malknapp" data-mal="hestesko"><svg viewBox="0 0 40 30"><rect x="6" y="2" width="28" height="3" rx="1" class="t"/><rect x="4" y="9" width="4" height="5" rx="1"/><rect x="32" y="9" width="4" height="5" rx="1"/><rect x="4" y="16" width="4" height="5" rx="1"/><rect x="32" y="16" width="4" height="5" rx="1"/><rect x="4" y="24" width="7" height="4" rx="1"/><rect x="12.5" y="24" width="7" height="4" rx="1"/><rect x="21" y="24" width="7" height="4" rx="1"/><rect x="29" y="24" width="7" height="4" rx="1"/></svg><span>Hestesko</span></button>
+                <label class="bryter liten-bryter"><input type="checkbox" id="fyllFremst"><span>Fyll fremst først</span></label>
+                <label class="bryter liten-bryter"><input type="checkbox" id="adskillNaboer"><span>Adskilte også unna nabobord</span></label>
+            </div>
+            <div class="re-info"><span class="kapasitet" id="kapasitet"></span><span>Trykk på et bord for å fjerne eller hente det tilbake. ↻ roterer pulten (tykk kant = fronten).</span></div>
         </div>
         <div class="status" id="status"></div>
         <div class="kart-ramme" id="kartRamme">
@@ -599,7 +607,7 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
                 <li><b>Trykk den blå knappen</b> for nytt kart eller nye grupper, eller <b>✨ Avslør nye</b> for å vise plassene én og én på tavla.</li>
                 <li><b>Juster:</b> trykk på et navn, og så på en annen plass for å bytte. Der kan du også markere at eleven er borte.</li>
             </ol>
-            <p class="info-tips"><b>Mer du kan gjøre:</b> faste partnere og elever som skal holdes adskilt (<b>Regler</b>), bordoppsett og hestesko (<b>Rom</b>), fordeling etter nivå (<b>Nivå</b> og <b>Fordeling</b> øverst), ⏱ <b>Tidtaker</b> og ⛶ <b>Tavle</b> (fullskjerm).</p>
+            <p class="info-tips"><b>Mer du kan gjøre:</b> faste partnere og elever som skal holdes adskilt (<b>Regler</b>), bordoppsett og hestesko (<b>✏️ Rom</b> ved siden av Oppsett), fordeling etter nivå (<b>Nivå</b> og <b>Fordeling</b> øverst), ⏱ <b>Tidtaker</b> og ⛶ <b>Tavle</b> (fullskjerm).</p>
             <p class="info-tips" id="infoMobilTips">På mobil og nettbrett: Trykk <b>☰</b> for å åpne menyen. Velg «Legg til på startskjermen» i nettleseren for å få Klassekart som en app.</p>
         </div>
         <div class="info-innhold" id="infoOm">
@@ -615,7 +623,7 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1139,7 +1147,7 @@ function tegnRegler() {
         ? "Elevene havner aldri i samme gruppe."
         : k.innstillinger.adskillNaboer
         ? "Elevene settes aldri ved samme bord, og heller ikke ved bordet ved siden av eller foran og bak."
-        : "Elevene settes aldri ved samme bord. (Nabobord kan slås på i Rom-fanen.)";
+        : "Elevene settes aldri ved samme bord. (Nabobord kan slås på under ✏️ Rom.)";
 
     const antall = k.partnere.length + k.adskilt.length;
     $("tallRegler").textContent = antall;
@@ -1194,7 +1202,6 @@ function leggTilRegel(type) {
 
 function tegnRomfane() {
     const k = klasse(), r = rom();
-    $("romNavn").textContent = r.navn;
     $("romRader").value = r.rader;
     $("romPulter").value = r.pulter;
     $("romSeter").value = r.seter;
@@ -1203,9 +1210,13 @@ function tegnRomfane() {
     const info = $("kapasitet");
     info.textContent = `${bord} bord · ${kap} plasser · ${n} elever i klassen` + (kap < n ? ` – ${n - kap} plasser for lite` : "");
     info.classList.toggle("varsel", kap < n);
-    const b = $("btnRedigerRom");
-    b.textContent = redigerRom ? "✓ Ferdig med å tilpasse" : "✏️ Tilpass bordene i kartet";
-    b.classList.toggle("aktiv", redigerRom);
+    $("fyllFremst").checked = k.innstillinger.fyllFremst;
+    $("adskillNaboer").checked = k.innstillinger.adskillNaboer;
+    $("romEditor").hidden = !redigerRom;
+    if (document.body.classList.contains("romredigering") !== redigerRom) {
+        document.body.classList.toggle("romredigering", redigerRom);
+        planleggTilpassing();
+    }
     document.querySelectorAll(".malknapp").forEach(m => m.classList.toggle("valgt", m.dataset.mal === r.mal));
 }
 
@@ -1261,6 +1272,9 @@ function tegnOppsettvalg() {
     k.rom.forEach((r, i) => s.append(new Option(r.navn, i)));
     s.append(new Option("+ Nytt oppsett …", "ny"));
     s.value = k.aktivtRom;
+    const s2 = $("oppsettValg2");
+    s2.innerHTML = s.innerHTML;
+    s2.value = k.aktivtRom;
 }
 
 function endreRom() {
@@ -1301,8 +1315,9 @@ async function nyttOppsett() {
     k.rom.push(nytt);
     k.aktivtRom = k.rom.length - 1;
     redigerRom = false;
-    lagre(); oppdaterAlt(); velgFane("rom");
-    visToast(`Oppsettet «${navn}» er laget. Juster rader og bord i Rom-fanen.`);
+    redigerRom = true;
+    lagre(); oppdaterAlt();
+    visToast(`Oppsettet «${navn}» er laget. Juster rader og bord her.`);
     return true;
 }
 
@@ -1521,7 +1536,7 @@ function genererKart() {
     const r = rom();
     if (redigerRom) { redigerRom = false; tegnRomfane(); }
     if (!k.elever.length) { visToast("Legg inn elever først."); velgFane("elever"); return; }
-    if (!aktiveBord(r).length) { visToast("Rommet har ingen bord."); velgFane("rom"); return; }
+    if (!aktiveBord(r).length) { visToast("Rommet har ingen bord."); redigerRom = true; tegnRomfane(); tegnKart(); return; }
     const { plassering, merknader } = lagKart(k, r);
     r.sisteKart = { dato: idag(), plassering, merknader, metode: k.innstillinger.metode };
     lagre();
@@ -2160,8 +2175,7 @@ function tegnVisningsvalg() {
     const tall = $("gruppeTall");
     if (k.grupper.modus === "antall") { tall.min = 2; tall.max = 15; tall.value = k.grupper.antall; }
     else { tall.min = 2; tall.max = 10; tall.value = k.grupper.storrelse; }
-    document.querySelector('.fane[data-fane="rom"]').hidden = grupper || hjul;
-    if ((grupper || hjul) && document.querySelector('.fane[data-fane="rom"]').classList.contains("aktiv")) velgFane("elever");
+    $("btnRedigerRom").hidden = grupper || hjul;
 }
 
 function settVisning(v) {
@@ -2459,15 +2473,29 @@ function tilpassKart() {
     if (erTavle()) {
         bredde = window.innerWidth - 40; hoyde = window.innerHeight - 40; maks = 2.6;
     } else {
+        // Kartet skal alltid få plass både i bredden og høyden – ingen rulling
         bredde = ramme.clientWidth - 4;
-        // På smale skjermer (meny over kartet) tilpasses bare bredden – der blar man nedover
-        hoyde = window.innerWidth <= 900 ? Infinity : ramme.clientHeight - 4;
+        hoyde = ramme.clientHeight - 4;
         maks = 1.3;
     }
     if (bredde <= 0 || hoyde <= 0) return;
+    ark.style.transform = ""; ark.style.margin = "";
     ark.style.fontSize = "14px";
-    const s = Math.min(bredde / ark.offsetWidth, hoyde / ark.offsetHeight, maks);
-    ark.style.fontSize = (14 * Math.max(s, 0.4)) + "px";   // alle bord skal alltid være synlige (på mobil kan man zoome med to fingre)
+    const w = ark.offsetWidth, h = ark.offsetHeight;
+    const s = Math.min(bredde / w, hoyde / h, maks);
+    if (s >= 1) {
+        ark.style.fontSize = (14 * s) + "px";   // forstørre: større skrift gir skarp tekst
+    } else {
+        // Krympe: bruk transform. Mobilnettlesere har ofte en minste skriftstørrelse,
+        // så å krympe skriften gjør ikke alltid kartet smalt nok (alle bord skal alltid synes).
+        const f = Math.max(s, 0.15);
+        ark.style.transformOrigin = "top left";
+        ark.style.transform = `scale(${f})`;
+        ark.style.marginLeft = Math.max(0, (ramme.clientWidth - w * f) / 2) + "px";
+        ark.style.marginRight = -(w * (1 - f)) + "px";     // ingen sidelengs rulling
+        ark.style.marginTop = "0";
+        ark.style.marginBottom = -(h * (1 - f)) + "px";    // ingen tom plass under
+    }
     if (iHjulmodus() && !hjulSnurrer) tegnHjulCanvas(hjulNavn(klasse()));
 }
 const tilpassTavle = tilpassKart;
@@ -2554,6 +2582,19 @@ $("btnAdskilt").addEventListener("click", () => leggTilRegel("adskilt"));
 
 ["romRader", "romPulter", "romSeter"].forEach(id => $(id).addEventListener("change", endreRom));
 document.querySelectorAll(".malknapp").forEach(b => b.addEventListener("click", () => brukMal(b.dataset.mal)));
+document.querySelectorAll(".stepper button[data-steg]").forEach(b => b.addEventListener("click", () => {
+    const inp = $(b.dataset.steg);
+    inp.value = klem((parseInt(inp.value) || 1) + (+b.dataset.d), 1, 12);
+    endreRom();
+}));
+$("btnRomFerdig").addEventListener("click", () => { redigerRom = false; tegnRomfane(); tegnKart(); });
+$("oppsettValg2").addEventListener("change", function () {
+    const hoved = $("oppsettValg");
+    hoved.value = this.value;
+    hoved.dispatchEvent(new Event("change"));
+});
+$("oppsettMeny").addEventListener("click", e => { if (e.target.closest("button")) $("oppsettMeny").open = false; });
+document.addEventListener("click", e => { const m = $("oppsettMeny"); if (m.open && !m.contains(e.target)) m.open = false; });
 $("btnRedigerRom").addEventListener("click", () => { redigerRom = !redigerRom; tegnRomfane(); tegnKart(); });
 $("btnNyttOppsett").addEventListener("click", nyttOppsett);
 $("btnGiNavnOppsett").addEventListener("click", async () => {
@@ -2577,12 +2618,11 @@ $("btnSlettOppsett").addEventListener("click", async () => {
 $("oppsettValg").addEventListener("change", async function () {
     const k = klasse();
     if (this.value === "ny") {
-        if (!(await nyttOppsett())) this.value = k.aktivtRom;
+        if (!(await nyttOppsett())) tegnOppsettvalg();
         return;
     }
-    k.aktivtRom = +this.value;
-    redigerRom = false;
-    lagre(); tegnRomfane(); tegnRegler(); tegnKart();
+    k.aktivtRom = +this.value;   // romredigeringen blir stående åpen hvis den var åpen
+    lagre(); tegnRomfane(); tegnOppsettvalg(); tegnRegler(); tegnKart();
 });
 
 $("metodeValg").addEventListener("change", function () { settMetode(this.value); });
@@ -2630,7 +2670,7 @@ $("gruppeTall").addEventListener("change", function () {
     lagre(); tegnVisningsvalg();
     if (g.siste) genererGrupper(); else tegnKart();
 });
-const erMobil = () => window.matchMedia("(max-width:700px)").matches;
+const erMobil = () => window.matchMedia("(max-width:900px)").matches;   // her ligger menyen som eget lag
 function settMeny(skjul, husk = true) {
     document.body.classList.toggle("uten-meny", skjul);
     $("btnMenyTopp").textContent = skjul ? "☰" : "✕";
@@ -2710,7 +2750,7 @@ $("btnSlettAlt").addEventListener("click", async () => {
 lastData();
 let startFane = "elever";
 try { startFane = localStorage.getItem("klassekart_fane") || "elever"; } catch (e) { /* ikke viktig */ }
-velgFane(["elever", "regler", "rom", "fordeling"].includes(startFane) ? startFane : "elever");
+velgFane(["elever", "regler", "fordeling"].includes(startFane) ? startFane : "elever");
 oppdaterAlt();
 if (forsteGang) visInfo("hjelp");
 </script>
