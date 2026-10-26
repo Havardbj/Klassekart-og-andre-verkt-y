@@ -508,18 +508,17 @@ body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,b
 .ios-steg b.nr{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
 .ios-ikon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:#eef2f7;flex:none}
 @media print{.installer,.m-ark,.m-ark-bak{display:none!important}}
-/* Klassekart på telefon: smale pulter med navnene over hverandre, så kartet blir høyt i stedet for bredt
-   og kan vises mye større på en stående skjerm */
-body.mobil .rom{gap:1.1em .9em}
-body.mobil .tavle{margin-bottom:1.6em;width:min(22em,80%)}
-body.mobil .bord{padding:.3em .35em .4em;gap:.2em}
-body.mobil .bord-nr{font-size:.68em}
-body.mobil .bord.s1{width:7.4em;min-height:0}
-body.mobil .bord.s2.rot-0,body.mobil .bord.s2.rot-180{width:7.4em;min-height:0}
-body.mobil .bord.s2.rot-0 .seter{flex-direction:column}
-body.mobil .bord.s2.rot-180 .seter{flex-direction:column-reverse}
-body.mobil .bord.s2.rot-90,body.mobil .bord.s2.rot-270{width:7.4em;min-height:0}
-body.mobil .bord .sete{font-size:1.12em;min-height:1.9em;padding:.25em .3em}
+/* Klassekart på telefon: kompakte pulter, men navnene står fortsatt side om side
+   (venstre/høyre skal stemme med klasserommet) */
+body.mobil .rom{gap:1em .7em}
+body.mobil .tavle{margin-bottom:1.5em;width:min(22em,80%)}
+body.mobil .bord{padding:.25em .3em .35em;gap:.15em}
+body.mobil .bord-nr{font-size:.66em}
+body.mobil .bord.s1{width:6.2em;min-height:0}
+body.mobil .bord.s2.rot-0,body.mobil .bord.s2.rot-180{width:11.8em;min-height:0}
+body.mobil .rom:not(.rediger) .bord.skjult{width:2.5em;min-width:0}   /* en midtgang trenger ikke plass som en hel pult */
+body.mobil .bord .seter{gap:.2em}
+body.mobil .bord .sete{font-size:1.05em;min-height:1.9em;padding:.25em .2em;letter-spacing:-.01em}
 body.mobil .bord.sg{width:12em}
 body.mobil .sete.ledig{font-size:.8em}
 
@@ -783,7 +782,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.2.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.2.3</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2661,6 +2660,12 @@ function tilpassKart() {
         ark.style.marginBottom = -(h * (1 - f)) + "px";    // ingen tom plass under
     }
     if (iHjulmodus() && !hjulSnurrer) tegnHjulCanvas(hjulNavn(klasse()));
+    if (erMobilApp() && mFane === "kart") {   // vis/skjul tipset om å snu telefonen
+        const vis = !!document.querySelector("#mChips .m-chip.info") && /Snu/.test($("mChips").textContent);
+        const t = ark.style.transform.match(/scale\(([\d.]+)\)/);
+        const bor = !redigerRom && window.innerHeight > window.innerWidth && t && +t[1] < 0.62;
+        if (vis !== !!bor) tegnMChips();
+    }
 }
 const tilpassTavle = tilpassKart;
 document.addEventListener("fullscreenchange", () => {
@@ -3065,6 +3070,10 @@ function tegnMChips() {
         chip(k.hjul.fjern ? "✓ Ta ut den som trekkes" : "Alle blir på hjulet", () => { $("hjulFjern").click(); tegnMChips(); }, k.hjul.fjern ? "paa" : "");
         if (k.hjul.ute.length) chip("↺ Alle med igjen", () => $("btnHjulNullstill").click());
         chip(lydPaa ? "🔊" : "🔇", () => { vekslLyd(); tegnMChips(); });
+    }
+    if (mFane === "kart" && !redigerRom && window.innerHeight > window.innerWidth) {
+        const t = $("kartArk").style.transform.match(/scale\(([\d.]+)\)/);
+        if (t && +t[1] < 0.62) chip("📱↻ Snu telefonen for større kart", () => visToast("Snu telefonen på siden – da blir kartet større. Du kan også zoome med to fingre."), "info");
     }
     if (mFane !== "hjul" && !redigerRom) {
         const s = statusOppsummering();
