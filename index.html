@@ -267,6 +267,16 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .pdf-knapp{margin-top:8px;width:100%}
 body.mobil .pdf-dialog{width:100%;max-height:calc(100dvh - 24px)}
 body.mobil .pdf-liste{max-height:none}
+.pdf-foto{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;background:#eef2f7}
+.pdf-foto.tom{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;font-weight:700}
+.m-avatar{overflow:hidden}
+.m-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.chip-foto{width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:-5px;margin:-2px 6px -2px -6px}
+.hjul-foto{display:block;width:2.4em;height:2.4em;border-radius:50%;object-fit:cover;margin:0 auto 4px;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.avslor-bilde{display:block;width:112px;height:112px;border-radius:50%;object-fit:cover;margin:6px auto 2px;border:3px solid #fcd34d}
+body.mobil .avslor-bilde{width:76px;height:76px}
+.bilde-linje{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
+.bilde-linje .lenke{font-size:13px}
 .knapp.primar.fare{background:var(--bad);border-color:var(--bad)}
 .avslor-knapp{background:#fff8e1;border-color:#f3d27a;color:#7a5200;font-weight:600}
 .avslor-knapp:hover{background:#fff0c2}
@@ -625,7 +635,8 @@ body.mobil .sete.ledig{font-size:.8em}
                 <div class="felt-hode"><label for="eleverTekst">Navneliste</label><span class="teller" id="elevTeller"></span></div>
                 <textarea id="eleverTekst" rows="11" spellcheck="false" placeholder="Ett navn per linje …"></textarea>
                 <p class="hjelp" id="elevHjelp">Ett navn per linje. Endringer lagres automatisk.</p>
-                <button type="button" class="knapp pdf-knapp" id="btnPdfElever">📄 Hent navn fra klasseliste (PDF)</button>
+                <button type="button" class="knapp pdf-knapp" id="btnPdfElever">📄 Hent navn og bilder fra klasseliste (PDF)</button>
+                <div class="bilde-linje" id="bildeLinje" hidden><span id="bildeAntall"></span><button type="button" class="lenke" id="btnSlettBilder">Slett alle bilder</button></div>
             </div>
             <hr class="skille">
             <div class="felt">
@@ -834,6 +845,7 @@ body.mobil .sete.ledig{font-size:.8em}
             <ul>
                 <li>Hver enhet har sin egen lagring. Flytt klasser mellom PC, mobil og nettbrett med <b>⋯ → Eksporter backup</b> og <b>Importer backup</b>.</li>
                 <li>Backup-filen inneholder personopplysninger om elever. Oppbevar den som annen elevinformasjon, for eksempel i skolens OneDrive, ikke i privat e-post.</li>
+                <li>Elevbilder (fra PDF-import eller kamera) lagres som små miniatyrer bare på enheten. Du velger selv om de skal være med i backupen, og kan slette dem under Elever.</li>
                 <li>Tømmer du nettleserdata på enheten, slettes også klassene. Ta backup jevnlig.</li>
                 <li>Opplysninger om nivå og hvem som skal holdes adskilt, er uskarpe på skjermen til du holder over eller trykker på dem, så de ikke vises når skjermen er delt med klassen.</li>
             </ul>
@@ -842,7 +854,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -889,6 +901,7 @@ body.mobil .sete.ledig{font-size:.8em}
 <div class="avslor" id="avslor" hidden>
     <div class="avslor-kort" id="avslorKort">
         <div class="avslor-teller" id="avslorTeller"></div>
+        <img class="avslor-bilde" id="avslorBilde" alt="" hidden>
         <div class="avslor-navn" id="avslorNavn"></div>
         <div class="avslor-sted" id="avslorSted"></div>
         <div class="avslor-knapper" id="avslorKnapper">
@@ -910,6 +923,7 @@ body.mobil .sete.ledig{font-size:.8em}
 </div>
 <input type="file" id="importFil" hidden>
 <input type="file" id="pdfFil" accept="application/pdf,.pdf" hidden>
+<input type="file" id="bildeFil" accept="image/*" hidden>
 <div class="dialog-bak" id="pdfVindu" hidden>
     <div class="dialog pdf-dialog" role="dialog" aria-modal="true" aria-labelledby="pdfTittel">
         <div class="info-hode"><h2 id="pdfTittel">📄 Importer klasseliste</h2><button type="button" class="regel-fjern" id="pdfLukk" title="Lukk">×</button></div>
@@ -1039,7 +1053,8 @@ function nyKlasseData() {
         aktivtRom: 0,
         visning: "kart",
         grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null, roller: { paa: false, liste: [...STANDARD_ROLLER] }, rolleLogg: [] },
-        hjul: { fjern: true, dato: idag(), ute: [] }
+        hjul: { fjern: true, dato: idag(), ute: [] },
+        bilder: {}
     };
 }
 function lesPar(liste) {
@@ -1118,6 +1133,10 @@ function normaliserKlasse(k) {
         dato: String(h.dato || idag()),
         ute: Array.isArray(h.ute) ? h.ute.map(ryddNavn).filter(Boolean) : []
     };
+    for (const n in (k.bilder || {})) {
+        const b = k.bilder[n], navn = ryddNavn(n);
+        if (typeof b === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(b) && b.length < 300000 && ut.elever.includes(navn)) ut.bilder[navn] = b;
+    }
     const g = k.grupper || {};
     ut.grupper.modus = g.modus === "antall" ? "antall" : "storrelse";
     ut.grupper.storrelse = klem(parseInt(g.storrelse) || 3, 2, 10);
@@ -1320,9 +1339,17 @@ const handlinger = {
         lagre(); oppdaterAlt();
         visToast(`«${navn}» er slettet.`);
     },
-    eksporter() {
+    async eksporter() {
         lesElevliste();
-        const innhold = { app: "klassekart", versjon: 3, eksportert: new Date().toISOString(), klasser: data.klasser };
+        let klasser = data.klasser;
+        if (Object.values(data.klasser).some(k => k.bilder && Object.keys(k.bilder).length)) {
+            const svar = visDialog("Ta med elevbildene i backupen?\n\nVelg «Uten bilder» hvis filen skal sendes på e-post eller deles.");
+            $("dialogOk").textContent = "Med bilder"; $("dialogAvbryt").textContent = "Uten bilder";
+            const med = await svar;
+            $("dialogAvbryt").textContent = "Avbryt";
+            if (!med) { klasser = {}; for (const n in data.klasser) klasser[n] = Object.assign({}, data.klasser[n], { bilder: {} }); }
+        }
+        const innhold = { app: "klassekart", versjon: 3, eksportert: new Date().toISOString(), klasser };
         const filnavn = `klassekart-backup-${idag()}.json`;
         const blob = new Blob([JSON.stringify(innhold, null, 2)], { type: "application/json" });
         // iPhone/iPad: bruk del-arket («Arkiver i Filer», AirDrop, e-post …) – vanlig nedlasting er upålitelig der
@@ -1419,12 +1446,17 @@ function tegnElevfane() {
     for (const n of navn) {
         const borte = frav.has(n);
         const b = el("button", "chip" + (borte ? " av" : ""), n);
+        const foto = elevBilde(n, k);
+        if (foto) { const im = el("img", "chip-foto"); im.src = foto; im.alt = ""; b.prepend(im); }
         b.type = "button";
         b.title = borte ? "Borte i dag – trykk for å angre" : "Trykk for å markere fravær";
         b.addEventListener("click", () => settFravaer(n, !borte));
         chips.append(b);
     }
     $("btnNullFravaer").hidden = frav.size === 0;
+    const nb = Object.keys(k.bilder || {}).length;
+    $("bildeLinje").hidden = !nb;
+    $("bildeAntall").textContent = `📷 ${nb} ${nb === 1 ? "elev har" : "elever har"} bilde`;
 }
 
 function settFravaer(navn, borte) {
@@ -2453,6 +2485,8 @@ function snurrHjul() {
         hjulSist = navn[vinner];
         vib([25, 40, 25]);
         res.innerHTML = "";
+        const foto = elevBilde(navn[vinner]);
+        if (foto) { const im = el("img", "hjul-foto"); im.src = foto; im.alt = ""; res.append(im); }
         res.append(document.createTextNode(navn[vinner]));
         void res.offsetWidth; res.className = "hjul-resultat vis";
         fanfare();
@@ -2533,7 +2567,10 @@ function nesteAvsloring() {
     kort.classList.remove("landet");
     $("avslorTeller").textContent = `${avs.idx + 1} av ${avs.rekke.length}`;
     $("avslorSted").textContent = "";
+    $("avslorBilde").hidden = true;
     spinn(maal, () => {
+        const foto = elevBilde(maal.navn);
+        if (foto) { $("avslorBilde").src = foto; $("avslorBilde").hidden = false; }
         void kort.offsetWidth;
         kort.classList.add("landet");
         $("avslorSted").textContent = "→ " + maal.sted;
@@ -3586,7 +3623,7 @@ function klasseArk(inn) {
     const liste = mEl("div", { class: "m-liste" });
     for (const navn of Object.keys(data.klasser)) {
         const n = data.klasser[navn].elever.length;
-        liste.append(mKnapp([mEl("span", { class: "m-avatar", style: `background:${elevFarge(navn)}` }, initialer(navn)),
+        liste.append(mKnapp([mAvatar(navn),
             mEl("span", { class: "fyll" }, mEl("b", null, navn), mEl("small", { style: "display:block;color:var(--muted);font-size:12.5px" }, `${n} elever`)),
             navn === data.aktivKlasse ? mEl("span", { class: "m-ok", style: "font-size:19px;font-weight:800" }, "✓") : null], "m-liste-rad", () => {
             lukkArk();
@@ -3607,6 +3644,11 @@ function klasseArk(inn) {
     if (data.aktivKlasse) h("🗑️ Slett klassen", "slett", true);
 }
 
+function mAvatar(n, stor) {
+    const b = elevBilde(n);
+    if (b) { const im = mEl("img", { src: b, alt: "" }); return mEl("span", { class: "m-avatar" + (stor ? " stor" : "") }, im); }
+    return mEl("span", { class: "m-avatar" + (stor ? " stor" : ""), style: `background:${elevFarge(n)}` }, initialer(n));
+}
 // ---------- Klasse-fanen: elevliste ----------
 function tegnMKlasse() {
     const boks = $("mKlasseVisning"), k = klasse();
@@ -3648,13 +3690,13 @@ function tegnMKlasse() {
     if (!navn.length) {
         liste.append(mEl("div", { class: "m-tom" }, "Skriv inn ett og ett navn over, eller trykk «Lim inn liste» for å lime inn hele klasselisten på én gang.",
             mEl("br"), mEl("br"), "Har du klassene på PC-en? Ta «Eksporter backup» der, og importer filen her.",
-            mKnapp("📄 Hent navn fra klasseliste (PDF)", "m-hoved m-full", () => handlinger.importerPdf()),
+            mKnapp("📄 Hent navn og bilder fra klasseliste (PDF)", "m-hoved m-full", () => handlinger.importerPdf()),
             mKnapp("📂 Importer backup", "m-handling-rad", () => handlinger.importer())));
         return;
     }
     const ul = mEl("div", { class: "m-liste" });
     for (const n of navn) {
-        ul.append(mKnapp([mEl("span", { class: "m-avatar", style: `background:${elevFarge(n)}` }, initialer(n)),
+        ul.append(mKnapp([mAvatar(n),
             mEl("span", { class: "fyll" }, n),
             frav.has(n) ? mEl("span", { class: "m-merke" }, "Borte") : null,
             mEl("span", { class: "m-pil" }, "›")], "m-liste-rad", () => aapneArk(inn => elevArk(inn, n))));
@@ -3691,10 +3733,13 @@ function elevArk(inn, navn) {
     if (!k.elever.includes(navn)) { lukkArk(); return; }
     const borte = dagensFravaer(k).includes(navn);
     inn.append(mEl("div", { class: "m-ark-hode" },
-        mEl("span", { class: "m-avatar stor", style: `background:${elevFarge(navn)}` }, initialer(navn)),
+        mAvatar(navn, true),
         mEl("h3", null, navn),
         mKnapp("Ferdig", "m-ferdig", () => lukkArk())));
     inn.append(mRad("🤒 Borte i dag", mBryter(borte, v => { settFravaer(navn, v); tegnMKlasse(); byggArk(); })));
+    inn.append(mRad("📷 Bilde", elevBilde(navn)
+        ? mEl("span", { style: "display:flex;gap:6px" }, mKnapp("Bytt", "m-tag", () => velgElevBilde(navn)), mKnapp("Fjern", "m-tag", () => { fjernElevBilde(navn); byggArk(); }))
+        : mKnapp("＋ Legg til", "m-tag", () => velgElevBilde(navn))));
     {   // Fast plass i det aktive oppsettet
         const r = rom(), f = r.faste[navn];
         if (f) {
@@ -3754,7 +3799,7 @@ function velgElevArk(inn, tittel, kandidater, vedValg, tilbake) {
     inn.append(mEl("div", { class: "m-ark-hode" }, mEl("h3", null, tittel), mKnapp("Tilbake", "m-ferdig", tilbake)));
     if (!kandidater.length) { inn.append(mEl("p", { class: "m-tom" }, "Ingen andre elever å velge.")); return; }
     const l = mEl("div", { class: "m-liste" });
-    for (const n of kandidater) l.append(mKnapp([mEl("span", { class: "m-avatar", style: `background:${elevFarge(n)}` }, initialer(n)), mEl("span", { class: "fyll" }, n)], "m-liste-rad", () => vedValg(n)));
+    for (const n of kandidater) l.append(mKnapp([mAvatar(n), mEl("span", { class: "fyll" }, n)], "m-liste-rad", () => vedValg(n)));
     inn.append(l);
 }
 
@@ -3771,6 +3816,7 @@ function endreElevNavn(k, gammelt, nytt) {
     k.hjul.ute = k.hjul.ute.map(bytt);
     for (const r of k.rom) if (r.faste && r.faste[gammelt]) { r.faste[nytt] = r.faste[gammelt]; delete r.faste[gammelt]; }
     if (k.grupper.siste && k.grupper.siste.roller && k.grupper.siste.roller[gammelt]) { k.grupper.siste.roller[nytt] = k.grupper.siste.roller[gammelt]; delete k.grupper.siste.roller[gammelt]; }
+    if (k.bilder && k.bilder[gammelt]) { k.bilder[nytt] = k.bilder[gammelt]; delete k.bilder[gammelt]; }
     if (hjulSist === gammelt) hjulSist = nytt;
     lagre(); oppdaterAlt();
 }
@@ -3784,6 +3830,7 @@ function fjernElev(k, navn) {
     if (k.grupper.siste) k.grupper.siste.grupper = k.grupper.siste.grupper.map(g => g.filter(x => x !== navn)).filter(g => g.length);
     k.hjul.ute = k.hjul.ute.filter(x => x !== navn);
     for (const r of k.rom) if (r.faste) delete r.faste[navn];
+    if (k.bilder) delete k.bilder[navn];
     if (hjulSist === navn) hjulSist = null;
     lagre(); oppdaterAlt();
 }
@@ -3963,18 +4010,42 @@ function lastPdfJs() {
     return pdfjsLaster;
 }
 
-// Leser teksten i PDF-en som linjer med celler (tekstbiter som står tett sammen)
-async function lesPdfLinjer(buf) {
+// Leser PDF-en: tekst som linjer med celler, og hvor bildene står på hver side
+async function lesPdf(buf) {
     const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
-    const linjer = [];
+    const linjer = [], sider = [];
+    const OPS = window.pdfjsLib.OPS, U = window.pdfjsLib.Util;
     for (let sn = 1; sn <= pdf.numPages; sn++) {
         const side = await pdf.getPage(sn);
         const tc = await side.getTextContent();
         const biter = tc.items.filter(i => i.str && i.str.trim())
-            .map(i => ({ x: i.transform[4], y: i.transform[5], b: i.width || 0, s: i.str }));
-        biter.sort((a, b) => b.y - a.y || a.x - b.x);
+            .map(i => ({ x: i.transform[4], y: i.transform[5], b: i.width || 0, h: i.height || Math.abs(i.transform[3]) || 10, s: i.str }));
+        // Bilder: følg transformasjonsmatrisen gjennom tegneoperasjonene
+        const bilder = [];
+        try {
+            const ol = await side.getOperatorList();
+            let ctm = [1, 0, 0, 1, 0, 0]; const stabel = [];
+            for (let i = 0; i < ol.fnArray.length; i++) {
+                const fn = ol.fnArray[i], a = ol.argsArray[i];
+                if (fn === OPS.save) stabel.push(ctm);
+                else if (fn === OPS.restore) ctm = stabel.pop() || [1, 0, 0, 1, 0, 0];
+                else if (fn === OPS.transform) ctm = U.transform(ctm, a);
+                else if (fn === OPS.paintFormXObjectBegin) { stabel.push(ctm); if (Array.isArray(a[0]) && a[0].length === 6) ctm = U.transform(ctm, a[0]); }
+                else if (fn === OPS.paintFormXObjectEnd) ctm = stabel.pop() || [1, 0, 0, 1, 0, 0];
+                else if (fn === OPS.paintImageXObject || fn === OPS.paintInlineImageXObject || fn === OPS.paintJpegXObject) {
+                    const p = [[0, 0], [1, 1], [0, 1], [1, 0]].map(q => U.applyTransform(q, ctm));
+                    const xs = p.map(q => q[0]), ys = p.map(q => q[1]);
+                    const r = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+                    const w = r.x1 - r.x0, h = r.y1 - r.y0;
+                    if (w >= 28 && h >= 28 && w / h < 2.2 && h / w < 2.2) bilder.push(r);
+                }
+            }
+        } catch (e) { /* uten bilder */ }
+        sider.push({ side, biter, bilder });
+        // Linjer og celler
+        const sortert = [...biter].sort((a, b) => b.y - a.y || a.x - b.x);
         const sideLinjer = [];
-        for (const bit of biter) {
+        for (const bit of sortert) {
             let l = sideLinjer.find(l => Math.abs(l.y - bit.y) < 3);
             if (!l) { l = { y: bit.y, biter: [] }; sideLinjer.push(l); }
             l.biter.push(bit);
@@ -3990,31 +4061,45 @@ async function lesPdfLinjer(buf) {
                 else celler.push({ x: bit.x, b: bit.b, s: bit.s });
             }
             celler.forEach(c => { c.s = c.s.replace(/\s+/g, " ").trim(); });
-            linjer.push(celler.filter(c => c.s));
+            const rad = celler.filter(c => c.s);
+            rad.side = sn - 1;
+            linjer.push(rad);
         }
     }
-    return linjer;
+    return { linjer, sider };
 }
 
 const PDF_STOPP = new Set(("klasse klasseliste klasser elev elever elevliste elevoversikt navn fornavn etternavn mellomnavn side sider skole skolen " +
-    "kontaktlærer kontaktlærere lærer lærere dato telefon tlf mobil adresse postnr poststed e-post epost gruppe grupper gruppeliste " +
+    "kontaktlærer kontaktlærere lærer lærere faglærer faglærere dato telefon tlf mobil adresse postnr poststed e-post epost gruppe grupper gruppeliste " +
     "basisgruppe trinn rom fag skoleår utskrift utskrevet totalt antall sum oversikt liste rapport vg1 vg2 vg3 født fødselsdato " +
     "fødselsnummer kjønn gutt jente gutter jenter foresatt foresatte status aktiv aktive programområde utdanningsprogram periode termin " +
-    "semester visma inschool kl kommentar merknad merknader nr nummer år skolested avdeling fylke kommune videregående " +
+    "semester visma inschool kl kommentar merknad merknader nr nummer år skolested avdeling fylke kommune videregående karakteransvarlig " +
     "mandag tirsdag onsdag torsdag fredag lørdag søndag januar februar mars april mai juni juli august september oktober november desember " +
-    "teknologi industrifag elektro elektrofag datateknologi helse oppvekst studiespesialisering").split(" "));
+    "naturfag matematikk norsk engelsk teknologi industrifag elektro elektrofag datateknologi helse oppvekst studiespesialisering").split(" "));
 
 const tittelStor = t => t.toLowerCase().replace(/(^|[\s\-'’])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
 const erNavneord = (t, forste) => /^[\p{L}][\p{L}'’.\-]*,?$/u.test(t) && (/^\p{Lu}/u.test(t) || (!forste && t.length <= 3));
 const erStore = t => t.length > 1 && /^[\p{Lu}'’\-]+,?$/u.test(t);
 
+// Tar ordene fra starten av en tekst fram til første tall, parentes eller stoppord
+function navneord(tekst) {
+    const tokens = [];
+    for (const t of String(tekst).replace(/^\s*\d{1,3}\s*[.)]?\s+/, "").split(/\s+/).filter(Boolean)) {
+        if (/[\d@/\\|:;()]/.test(t)) break;
+        if (tokens.length && PDF_STOPP.has(t.toLowerCase().replace(/[,:.]$/, ""))) break;
+        tokens.push(t);
+        if (tokens.length > 6) break;
+    }
+    return tokens;
+}
+
 function tolkNavn(tokens) {
     tokens = tokens.filter(Boolean);
-    if (!tokens.length || tokens.length > 5) return null;
+    if (!tokens.length || tokens.length > 6) return null;
     if (tokens.some(t => PDF_STOPP.has(t.toLowerCase().replace(/[,:.]$/, "")))) return null;
     if (!tokens.every((t, i) => erNavneord(t, i === 0))) return null;
     const komma = tokens.findIndex(t => t.endsWith(","));
-    let fornavn, etternavn;
+    let fornavn, etternavn, vanlig = false;
     if (komma > -1 && komma < tokens.length - 1) {            // «Nordmann, Ola»
         etternavn = tokens.slice(0, komma + 1).join(" ").replace(/,$/, "");
         fornavn = tokens.slice(komma + 1).join(" ");
@@ -4027,24 +4112,24 @@ function tolkNavn(tokens) {
     } else {                                                    // «Ola Nordmann»
         fornavn = tokens.slice(0, -1).join(" ");
         etternavn = tokens[tokens.length - 1];
+        vanlig = true;
     }
     fornavn = fornavn.replace(/,/g, "").trim(); etternavn = etternavn.replace(/,/g, "").trim();
     if (erStore(fornavn.replace(/\s/g, ""))) fornavn = tittelStor(fornavn);
     if (erStore(etternavn.replace(/\s/g, ""))) etternavn = tittelStor(etternavn);
-    if (!fornavn || fornavn.length > 30 || etternavn.length > 30) return null;
-    return { fornavn, etternavn };
+    if (!fornavn || fornavn.length > 40 || etternavn.length > 30) return null;
+    return { fornavn, etternavn, vanlig };
 }
 
-function finnNavnIPdf(linjer) {
-    const funnet = [];
+function finnNavnIPdf(linjer, utenFritekst) {
+    const naer = (celler, x, tol) => celler.reduce((best, c) => (Math.abs(c.x - x) < tol && (!best || Math.abs(c.x - x) < Math.abs(best.x - x))) ? c : best, null);
     // 1) Tabell med egne kolonner for fornavn og etternavn
-    let kolF = null, kolE = null;
+    let funnet = [], kolF = null, kolE = null;
     for (const celler of linjer) {
         const f = celler.find(c => /^fornavn/i.test(c.s)), e = celler.find(c => /^etternavn/i.test(c.s));
         if (f && e) { kolF = f.x; kolE = e.x; continue; }
         if (kolF == null) continue;
-        const naer = x => celler.reduce((best, c) => (Math.abs(c.x - x) < 45 && (!best || Math.abs(c.x - x) < Math.abs(best.x - x))) ? c : best, null);
-        const cf = naer(kolF), ce = naer(kolE);
+        const cf = naer(celler, kolF, 45), ce = naer(celler, kolE, 45);
         if (!cf) continue;
         const n = tolkNavn(cf.s.split(" "));
         if (!n) continue;
@@ -4053,19 +4138,25 @@ function finnNavnIPdf(linjer) {
     }
     if (funnet.length >= 2) return ryddFunnet(funnet);
 
-    // 2) Én navnekolonne / fritekst: les fra starten av hver linje fram til første tall
+    // 2) Tabell med én kolonne for hele navnet («Elev», «Navn»)
+    funnet = [];
+    let kol = null, kolSide = -1;
+    for (const celler of linjer) {
+        const h = celler.find(c => /^(elev|elevnavn|elevens navn|navn|fullt navn)$/i.test(c.s));
+        if (h && celler.length >= 2) { kol = h.x; kolSide = celler.side; continue; }
+        if (kol == null || celler.side !== kolSide) continue;
+        const c = naer(celler, kol, 25);
+        if (!c) continue;
+        const n = tolkNavn(navneord(c.s));
+        if (n) funnet.push(n);
+    }
+    if (funnet.length >= 2) return ryddFunnet(funnet);
+
+    if (utenFritekst) return [];
+    // 3) Fritekst: les fra starten av hver linje fram til første tall
     const kandidater = [];
     for (const celler of linjer) {
-        let tekst = celler.map(c => c.s).join("  ").replace(/^\s*\d{1,3}\s*[.)]?\s+/, "");
-        // Hvis første celle bare er et nummer, hopp over den
-        const tokens = [];
-        for (const t of tekst.split(/\s+/)) {
-            if (/[\d@/\\|:;()]/.test(t)) break;
-            if (tokens.length && PDF_STOPP.has(t.toLowerCase().replace(/[,:.]$/, ""))) break;
-            tokens.push(t);
-            if (tokens.length > 5) break;
-        }
-        // Tabell uten overskrift: «Nordmann  Ola» i hver sin celle – bruk de to første cellene hvis de er navn
+        const tokens = navneord(celler.map(c => c.s).join("  "));
         const n = tolkNavn(tokens);
         if (n) kandidater.push({ ...n, ord: tokens.length });
     }
@@ -4080,10 +4171,95 @@ function ryddFunnet(liste) {
         const nk = (f + "|" + e).toLowerCase();
         if (!f || sett.has(nk)) continue;
         sett.add(nk);
-        ut.push({ fornavn: f, etternavn: e });
+        ut.push({ fornavn: f, etternavn: e, vanlig: !!n.vanlig });
     }
     return ut;
 }
+
+// Navnet under hvert bilde (over én eller flere linjer, gjerne avsluttet med «(1ED3)»)
+function finnBildenavn(sider) {
+    const ut = [];
+    sider.forEach((sd, si) => {
+        if (!sd.bilder.length) return;
+        const tilhorer = new Map();
+        for (const bit of sd.biter) {
+            let best = null, bestAvst = Infinity;
+            for (const r of sd.bilder) {
+                const under = r.y0 - (bit.y + bit.h * 0.6);
+                if (under < -2 || under > 140) continue;
+                if (bit.x < r.x0 - 35 || bit.x > r.x1 - 4) continue;
+                // ikke forbi et annet bilde som står mellom teksten og dette bildet
+                if (sd.bilder.some(o => o !== r && o.y1 < r.y0 && o.y1 > bit.y && Math.abs(o.x0 - r.x0) < 20)) continue;
+                const avst = under + Math.abs(bit.x - r.x0) * 0.3;
+                if (avst < bestAvst) { bestAvst = avst; best = r; }
+            }
+            if (best) { if (!tilhorer.has(best)) tilhorer.set(best, []); tilhorer.get(best).push(bit); }
+        }
+        for (const r of sd.bilder) {
+            const biter = (tilhorer.get(r) || []).sort((a, b) => b.y - a.y || a.x - b.x);
+            let tekst = "";
+            for (const b of biter) {
+                tekst += (tekst && !/[\s\-]$/.test(tekst) ? " " : "") + b.s;
+                if (/\)/.test(b.s)) break;          // «(1ED3)» avslutter navnet
+            }
+            tekst = tekst.replace(/\([^)]*\)?/g, " ").replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+            const tokens = navneord(tekst);
+            if (tokens.length) ut.push({ side: si, rekt: r, tokens });
+        }
+    });
+    return ut;
+}
+const navnNokkel = tokens => tokens.map(t => t.toLowerCase().replace(/[,.]/g, "")).filter(Boolean).sort().join(" ");
+function kobleBilder(elever, bildenavn) {
+    const ledige = new Set(bildenavn);
+    const nokler = elever.map(e => navnNokkel(`${e.fornavn} ${e.etternavn}`.split(" ")));
+    // Først eksakt (samme ord, uansett rekkefølge), så delvis treff
+    elever.forEach((e, i) => {
+        const b = [...ledige].find(b => navnNokkel(b.tokens) === nokler[i]);
+        if (b) { e.foto = b; ledige.delete(b); }
+    });
+    elever.forEach((e, i) => {
+        if (e.foto) return;
+        const mine = new Set(nokler[i].split(" "));
+        const treff = [...ledige].filter(b => { const o = navnNokkel(b.tokens).split(" "); const felles = o.filter(x => mine.has(x)).length; return felles >= 2 || (felles >= 1 && (o.length === 1 || mine.size === 1)); });
+        if (treff.length === 1) { e.foto = treff[0]; ledige.delete(treff[0]); }
+    });
+}
+// Klipper ut bildene fra sidene som små, kvadratiske miniatyrer
+async function lagMiniatyrer(sider, elever) {
+    const perSide = new Map();
+    for (const e of elever) if (e.foto) { if (!perSide.has(e.foto.side)) perSide.set(e.foto.side, []); perSide.get(e.foto.side).push(e); }
+    for (const [si, liste] of perSide) {
+        const side = sider[si].side;
+        const minste = Math.min(...liste.map(e => Math.min(e.foto.rekt.x1 - e.foto.rekt.x0, e.foto.rekt.y1 - e.foto.rekt.y0)));
+        const skala = klem(170 / minste, 1.5, 4);
+        const vp = side.getViewport({ scale: skala });
+        if (vp.width * vp.height > 16e6) continue;
+        const cv = document.createElement("canvas");
+        cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height);
+        const ctx = cv.getContext("2d");
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+        try { await side.render({ canvasContext: ctx, viewport: vp }).promise; } catch (e) { continue; }
+        for (const e of liste) {
+            const r = e.foto.rekt;
+            const [ax, ay, bx, by] = vp.convertToViewportRectangle([r.x0, r.y0, r.x1, r.y1]);
+            const x = Math.min(ax, bx), y = Math.min(ay, by), w = Math.abs(bx - ax), h = Math.abs(by - ay);
+            const s = Math.min(w, h);
+            const sx = x + (w - s) / 2, sy = y + (h - s) * 0.25;     // litt over midten, så hodet kommer med
+            e.bilde = tilMiniatyr(cv, sx, sy, s, s);
+        }
+    }
+}
+function tilMiniatyr(kilde, sx, sy, sw, sh) {
+    const STR = 128, c = document.createElement("canvas");
+    c.width = c.height = STR;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, STR, STR);
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(kilde, sx, sy, sw, sh, 0, 0, STR, STR);
+    return c.toDataURL("image/jpeg", 0.8);
+}
+
 function finnKlassenavn(linjer, filnavn) {
     const tekst = linjer.map(l => l.map(c => c.s).join(" ")).join("\n");
     let m = tekst.match(/(?:klasse|basisgruppe|klassekode|gruppe)\s*[:\-]?\s*([0-9][0-9A-ZÆØÅa-zæøå\-]{1,9})/i);
@@ -4093,7 +4269,14 @@ function finnKlassenavn(linjer, filnavn) {
     return filnavn.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").slice(0, 30) || "Ny klasse";
 }
 function visningsnavn(elever, format, bytt) {
-    const navn = elever.map(e => bytt ? { fornavn: e.etternavn || e.fornavn, etternavn: e.etternavn ? e.fornavn : "" } : e);
+    const navn = elever.map(e => {
+        if (!bytt || !e.etternavn) return e;
+        if (e.vanlig) {   // «Nordmann Ola Martin» → fornavn «Ola Martin», etternavn «Nordmann»
+            const ord = `${e.fornavn} ${e.etternavn}`.split(" ");
+            return { fornavn: ord.slice(1).join(" "), etternavn: ord[0] };
+        }
+        return { fornavn: e.etternavn, etternavn: e.fornavn };
+    });
     const lag = (n, f) => f === "full" ? `${n.fornavn} ${n.etternavn}`.trim()
         : f === "forbokstav" ? (n.etternavn ? `${n.fornavn} ${n.etternavn[0]}.` : n.fornavn) : n.fornavn;
     let ut = navn.map(n => lag(n, format));
@@ -4106,7 +4289,7 @@ function visningsnavn(elever, format, bytt) {
     return ut;
 }
 
-const pdfTilstand = { elever: [], valgt: [], format: "fornavn", bytt: false, maal: "ny", klassenavn: "", filnavn: "" };
+const pdfTilstand = { elever: [], valgt: [], format: "fornavn", bytt: false, maal: "ny", klassenavn: "", filnavn: "", medBilder: true };
 function lukkPdf() { $("pdfVindu").hidden = true; }
 function visPdfMelding(tekst, feil) {
     const inn = $("pdfInnhold");
@@ -4122,23 +4305,36 @@ async function importerPdfFil(fil) {
     visPdfMelding("📄 Leser PDF-en …");
     try { await lastPdfJs(); }
     catch (e) { visPdfMelding("PDF-leseren kunne ikke lastes. Åpne appen fra nettadressen (med nett første gang), så virker det.", true); return; }
-    let linjer;
-    try { linjer = await lesPdfLinjer(await fil.arrayBuffer()); }
+    let les;
+    try { les = await lesPdf(await fil.arrayBuffer()); }
     catch (e) {
         visPdfMelding(e && e.name === "PasswordException" ? "PDF-en er passordbeskyttet. Lagre en kopi uten passord og prøv igjen." : "Klarte ikke å lese PDF-en.", true);
         return;
     }
+    const { linjer, sider } = les;
     if (!linjer.length) { visPdfMelding("Fant ingen tekst i PDF-en. Den er trolig skannet som bilde. Kopier heller navnene fra Visma og lim dem inn i navnelisten.", true); return; }
-    const elever = finnNavnIPdf(linjer);
+    const bildenavn = finnBildenavn(sider);
+    // Med bildeliste brukes tabellen hvis den finnes, ellers navnene under bildene
+    let elever = finnNavnIPdf(linjer, bildenavn.length >= 2);
+    // Bare bildeliste (ingen navnetabell): bruk navnene under bildene
+    if (elever.length < 2 && bildenavn.length >= 2) elever = ryddFunnet(bildenavn.map(b => tolkNavn(b.tokens)).filter(Boolean));
     if (!elever.length) { visPdfMelding("Fant ingen elevnavn i PDF-en. Kopier navnene fra PDF-en og lim dem inn i navnelisten i stedet.", true); return; }
-    Object.assign(pdfTilstand, { elever, valgt: elever.map(() => true), format: "fornavn", bytt: false, maal: "ny", klassenavn: finnKlassenavn(linjer, fil.name), filnavn: fil.name });
+    if (bildenavn.length) {
+        kobleBilder(elever, bildenavn);
+        if (elever.some(e => e.foto)) {
+            visPdfMelding("📷 Henter elevbildene …");
+            try { await lagMiniatyrer(sider, elever); } catch (e) { /* uten bilder */ }
+        }
+    }
+    Object.assign(pdfTilstand, { elever, valgt: elever.map(() => true), format: "fornavn", bytt: false, maal: "ny", klassenavn: finnKlassenavn(linjer, fil.name), filnavn: fil.name, medBilder: true });
     tegnPdfForhandsvisning();
 }
 function tegnPdfForhandsvisning() {
     const t = pdfTilstand, inn = $("pdfInnhold");
     const visning = visningsnavn(t.elever, t.format, t.bytt);
+    const antBilder = t.elever.filter(e => e.bilde).length;
     inn.innerHTML = "";
-    inn.append(el("p", "hjelp", `Fant ${t.elever.length} navn i «${t.filnavn}». Kryss av for elevene som skal med. PDF-en leses bare på denne enheten.`));
+    inn.append(el("p", "hjelp", `Fant ${t.elever.length} navn${antBilder ? ` og ${antBilder} bilder` : ""} i «${t.filnavn}». Kryss av for elevene som skal med. PDF-en leses bare på denne enheten.`));
     // Navneformat
     const seg = el("div", "pdf-seg");
     for (const [v, tekst] of [["fornavn", "Fornavn"], ["forbokstav", "Fornavn + E."], ["full", "Fullt navn"]]) {
@@ -4152,6 +4348,13 @@ function tegnPdfForhandsvisning() {
     cb.addEventListener("change", () => { t.bytt = cb.checked; tegnPdfForhandsvisning(); });
     bytt.append(cb, document.createTextNode(" Bytt om fornavn og etternavn"));
     inn.append(bytt);
+    if (antBilder) {
+        const mb = el("label", "pdf-bytt");
+        const cb2 = el("input"); cb2.type = "checkbox"; cb2.checked = t.medBilder;
+        cb2.addEventListener("change", () => { t.medBilder = cb2.checked; tegnPdfForhandsvisning(); });
+        mb.append(cb2, document.createTextNode(` 📷 Ta med elevbildene (${antBilder} av ${t.elever.length})`));
+        inn.append(mb);
+    }
     // Liste
     const antall = t.valgt.filter(Boolean).length;
     const topp = el("div", "pdf-listetopp"); topp.append(el("span", null, `${antall} av ${t.elever.length} valgt`));
@@ -4164,7 +4367,12 @@ function tegnPdfForhandsvisning() {
         const rad = el("label", "pdf-elev" + (t.valgt[i] ? "" : " av"));
         const c = el("input"); c.type = "checkbox"; c.checked = t.valgt[i];
         c.addEventListener("change", () => { t.valgt[i] = c.checked; tegnPdfForhandsvisning(); });
-        rad.append(c, el("b", null, visning[i]), el("small", null, [e.fornavn, e.etternavn].filter(Boolean).join(" ")));
+        rad.append(c);
+        if (antBilder && t.medBilder) {
+            if (e.bilde) { const im = el("img", "pdf-foto"); im.src = e.bilde; im.alt = ""; rad.append(im); }
+            else rad.append(el("span", "pdf-foto tom", "?"));
+        }
+        rad.append(el("b", null, visning[i]), el("small", null, [e.fornavn, e.etternavn].filter(Boolean).join(" ")));
         liste.append(rad);
     });
     inn.append(liste);
@@ -4180,7 +4388,7 @@ function tegnPdfForhandsvisning() {
     if (data.aktivKlasse) {
         const r2 = el("label"); const i2 = el("input"); i2.type = "radio"; i2.name = "pdfMaal"; i2.checked = t.maal === "aktiv";
         i2.addEventListener("change", () => { t.maal = "aktiv"; });
-        r2.append(i2, document.createTextNode(` Legg til i «${data.aktivKlasse}»`));
+        r2.append(i2, document.createTextNode(` Legg til i «${data.aktivKlasse}»` + (antBilder ? " (oppdaterer bilder)" : "")));
         maal.append(r2);
     }
     inn.append(maal);
@@ -4194,32 +4402,72 @@ function tegnPdfForhandsvisning() {
 }
 function fullforPdfImport(visning) {
     const t = pdfTilstand;
-    const navn = unike(visning.filter((_, i) => t.valgt[i]).map(ryddNavn).filter(Boolean));
-    if (!navn.length) return;
+    const valgte = [];
+    t.elever.forEach((e, i) => { if (t.valgt[i]) { const n = ryddNavn(visning[i]); if (n && !valgte.some(v => v.navn === n)) valgte.push({ navn: n, bilde: e.bilde }); } });
+    if (!valgte.length) return;
     lesElevliste();
-    let klassenavn;
+    let klassenavn, k;
     if (t.maal === "ny" || !data.aktivKlasse) {
         klassenavn = (t.klassenavn || "").trim() || "Ny klasse";
         if (data.klasser[klassenavn]) { let i = 2; while (data.klasser[`${klassenavn} (${i})`]) i++; klassenavn = `${klassenavn} (${i})`; }
-        const k = nyKlasseData();
-        k.elever = navn;
+        k = nyKlasseData();
+        k.elever = valgte.map(v => v.navn);
         data.klasser[klassenavn] = k;
         const eks = data.klasser["Eksempelklasse"];
         if (eks && eks.elever.join() === EKSEMPEL_ELEVER.join() && !eks.partnere.length && !eks.adskilt.length) delete data.klasser["Eksempelklasse"];
     } else {
         klassenavn = data.aktivKlasse;
-        const k = data.klasser[klassenavn];
-        k.elever.push(...navn.filter(n => !k.elever.includes(n)));
+        k = data.klasser[klassenavn];
+        k.elever.push(...valgte.map(v => v.navn).filter(n => !k.elever.includes(n)));
     }
+    let antBilder = 0;
+    if (t.medBilder) for (const v of valgte) if (v.bilde) { k.bilder[v.navn] = v.bilde; antBilder++; }
     data.aktivKlasse = klassenavn;
     lukkPdf();
     lagre(); oppdaterAlt();
     if (erMobilApp()) visMFane("klasse");
-    visToast(`${navn.length} elever er lagt inn i «${klassenavn}».`);
+    visToast(`${valgte.length} elever${antBilder ? ` og ${antBilder} bilder` : ""} er lagt inn i «${klassenavn}».`);
 }
+
+// ================= Elevbilder =================
+function elevBilde(navn, k = klasse()) { return (k && k.bilder && k.bilder[navn]) || null; }
+let bildeFor = null;
+function velgElevBilde(navn) { bildeFor = navn; $("bildeFil").click(); }
+$("bildeFil").addEventListener("change", function () {
+    const f = this.files[0]; this.value = "";
+    const k = klasse();
+    if (!f || !k || !bildeFor) return;
+    const navn = bildeFor, url = URL.createObjectURL(f), img = new Image();
+    img.onload = () => {
+        const s = Math.min(img.naturalWidth, img.naturalHeight);
+        k.bilder[navn] = tilMiniatyr(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) * 0.3, s, s);
+        URL.revokeObjectURL(url);
+        lagre(); oppdaterAlt();
+        if (erMobilApp() && typeof byggArk === "function") byggArk();
+        visToast(`Bildet av ${navn} er lagret.`);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); visToast("Klarte ikke å lese bildet.", "feil"); };
+    img.src = url;
+});
+function fjernElevBilde(navn) {
+    const k = klasse(); if (!k) return;
+    delete k.bilder[navn];
+    lagre(); oppdaterAlt();
+}
+async function slettAlleBilder() {
+    const k = klasse(); if (!k) return;
+    const n = Object.keys(k.bilder).length;
+    if (!n || !(await bekreft(`Slette alle ${n} elevbilder i «${data.aktivKlasse}»?`))) return;
+    k.bilder = {};
+    lagre(); oppdaterAlt();
+    if (erMobilApp() && typeof byggArk === "function") try { byggArk(); } catch (e) { }
+    visToast("Elevbildene er slettet.");
+}
+
 $("pdfFil").addEventListener("change", function () { const f = this.files[0]; this.value = ""; if (f) importerPdfFil(f); });
 $("pdfLukk").addEventListener("click", lukkPdf);
 $("btnPdfElever").addEventListener("click", () => handlinger.importerPdf());
+$("btnSlettBilder").addEventListener("click", slettAlleBilder);
 $("pdfVindu").addEventListener("click", e => { if (e.target === $("pdfVindu")) lukkPdf(); });
 
 </script>
