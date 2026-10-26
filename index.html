@@ -547,6 +547,33 @@ body.mobil .tidtaker.innebygd{position:static;transform:none;width:auto;box-shad
 body.mobil .valg-linje{bottom:calc(var(--m-bunn, 0px) + 8px);left:10px;right:10px;transform:none;max-width:none}
 body.mobil .toast{bottom:calc(var(--m-bunn, 0px) + 12px)}
 body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,body.tavlemodus .m-faner{display:none!important}
+/* Telefon på tvers: faner som skinne til venstre, knapper til høyre – så kartet får hele høyden */
+@media (orientation: landscape) and (max-height: 500px) {
+    body.mobil:not(.tavlemodus){display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);height:100dvh}
+    body.mobil:not(.tavlemodus) .m-faner{grid-column:1;grid-row:1/3;flex-direction:column;justify-content:center;border-top:none;border-right:1px solid var(--line);padding:4px 2px 4px max(4px, env(safe-area-inset-left));width:64px;box-sizing:border-box}
+    body.mobil:not(.tavlemodus) .m-fane{flex:0 1 auto;padding:6px 0;font-size:10px}
+    body.mobil:not(.tavlemodus) .m-fane i{font-size:19px}
+    body.mobil:not(.tavlemodus) .m-appbar{grid-column:2;grid-row:1;padding:6px 6px 4px 12px}
+    body.mobil:not(.tavlemodus) .m-klassenavn{font-size:17px}
+    body.mobil:not(.tavlemodus) .m-ikon{min-width:34px;height:34px}
+    body.mobil:not(.tavlemodus) .m-chips{grid-column:3;grid-row:1;flex-wrap:nowrap;align-items:center;padding:6px 8px 4px;overflow:hidden;min-width:0}
+    body.mobil:not(.tavlemodus) .m-chip{padding:5px 10px;font-size:12px;flex:none}
+    body.mobil:not(.tavlemodus) .arbeidsflate{grid-column:2/4;grid-row:2;min-height:0;min-width:0}
+    body.mobil:not(.tavlemodus) .m-handling{grid-column:4;grid-row:1/3;flex-direction:column;justify-content:flex-end;width:96px;box-sizing:border-box;padding:8px max(8px, env(safe-area-inset-right)) 10px 6px}
+    body.mobil:not(.tavlemodus) .m-hoved{flex:0 0 auto;padding:12px 6px;font-size:14px;border-radius:14px;line-height:1.25}
+    body.mobil:not(.tavlemodus) .m-side{width:100%;height:46px;flex:none}
+    /* Timer på tvers: tid og oppgave til venstre, knappene til høyre */
+    body.mobil .tidtaker.innebygd{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:18px;align-items:center;align-content:center;height:100%}
+    body.mobil .tidtaker.innebygd .tid-hode{position:absolute;right:6px;top:2px}
+    body.mobil .tidtaker.innebygd .tid-oppgave,body.mobil .tidtaker.innebygd .tid-oppgaver,body.mobil .tidtaker.innebygd .tid-visning,body.mobil .tidtaker.innebygd .tid-melding,body.mobil .tidtaker.innebygd .tid-linje{grid-column:1}
+    body.mobil .tidtaker.innebygd .tid-oppgave{font-size:18px;padding:2px 4px}
+    body.mobil .tidtaker.innebygd .tid-oppgaver button{padding:4px 9px;font-size:12px}
+    body.mobil .tidtaker.innebygd .tid-visning{font-size:min(22vh,15vw,96px);margin:2px 0 6px}
+    body.mobil .tidtaker.innebygd .tid-forvalg{grid-column:2;grid-row:1/4;margin-top:0;gap:6px;align-self:end}
+    body.mobil .tidtaker.innebygd .tid-forvalg .knapp{padding:9px 2px;font-size:13.5px}
+    body.mobil .tidtaker.innebygd .tid-styring{grid-column:2;grid-row:4/6;margin-top:6px;gap:6px;align-self:start}
+    body.mobil .tidtaker.innebygd .tid-styring .knapp{padding:10px 2px;font-size:14px}
+}
 /* Installer-tilbud */
 .installer{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--m-bunn, 0px) + 12px);z-index:125;width:min(440px, calc(100vw - 20px));background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.25);padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px}
 .installer-topp{display:flex;gap:12px;align-items:center}
@@ -858,7 +885,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.10</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.11</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
