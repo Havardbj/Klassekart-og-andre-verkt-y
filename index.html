@@ -782,7 +782,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.2.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.2.4</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -839,7 +839,7 @@ body.mobil .sete.ledig{font-size:.8em}
         </div>
     </div>
 </div>
-<input type="file" id="importFil" accept=".json,application/json,text/plain" hidden>
+<input type="file" id="importFil" hidden>
 
 <script>
 "use strict";
@@ -1079,6 +1079,7 @@ function lagre() {
     }
 }
 let forsteGang = false;
+const EKSEMPEL_ELEVER = ["Kari", "Ola", "Ali", "Sara", "Jonas", "Emilie", "Åse", "Øyvind", "Nora", "Elias", "Ingrid", "Noah"];
 function lastData() {
     let lagret = null;
     try { lagret = JSON.parse(localStorage.getItem(LAGRING)); } catch (e) { lagret = null; }
@@ -1093,7 +1094,7 @@ function lastData() {
             setTimeout(() => visToast("Klassene fra forrige versjon er hentet inn."), 300);
         } else {
             const k = nyKlasseData();
-            k.elever = ["Kari", "Ola", "Ali", "Sara", "Jonas", "Emilie", "Åse", "Øyvind", "Nora", "Elias", "Ingrid", "Noah"];
+            k.elever = [...EKSEMPEL_ELEVER];
             data.klasser["Eksempelklasse"] = k;
             forsteGang = true;
         }
@@ -1195,14 +1196,17 @@ $("importFil").addEventListener("change", function () {
         }
         const navn = Object.keys(klasser);
         const overlapp = navn.filter(n => data.klasser[n]);
-        let melding = `Importere ${navn.length} klasse(r)?`;
+        let melding = `Importere ${navn.length === 1 ? "klassen «" + navn[0] + "»" : navn.length + " klasser: " + navn.join(", ")}?`;
         if (overlapp.length) melding += `\n\nDisse finnes fra før og blir erstattet:\n${overlapp.join(", ")}`;
         if (await bekreft(melding)) {
             lesElevliste();
             for (const n of navn) data.klasser[n] = normaliserKlasse(klasser[n]);
-            if (!data.klasser[data.aktivKlasse]) data.aktivKlasse = navn[0];
+            // Eksempelklassen fjernes hvis den ikke er brukt
+            const eks = data.klasser["Eksempelklasse"];
+            if (eks && !navn.includes("Eksempelklasse") && eks.elever.join() === EKSEMPEL_ELEVER.join() && !eks.partnere.length && !eks.adskilt.length) delete data.klasser["Eksempelklasse"];
+            data.aktivKlasse = navn[0];   // vis det som ble importert
             lagre(); oppdaterAlt();
-            visToast(`${navn.length} klasse(r) importert.`);
+            visToast(navn.length === 1 ? `«${navn[0]}» er importert.` : `${navn.length} klasser er importert. Bytt klasse øverst.`);
         }
         this.value = "";
     };
@@ -3312,7 +3316,9 @@ function tegnMKlasse() {
         mEl("span", null, `ELEVER · ${navn.length}` + (frav.size ? ` · ${frav.size} BORTE I DAG` : "")),
         mKnapp("Lim inn liste", "", () => aapneArk(limInnArk))));
     if (!navn.length) {
-        liste.append(mEl("div", { class: "m-tom" }, "Skriv inn ett og ett navn over, eller trykk «Lim inn liste» for å lime inn hele klasselisten på én gang."));
+        liste.append(mEl("div", { class: "m-tom" }, "Skriv inn ett og ett navn over, eller trykk «Lim inn liste» for å lime inn hele klasselisten på én gang.",
+            mEl("br"), mEl("br"), "Har du klassene på PC-en? Ta «Eksporter backup» der, og importer filen her.",
+            mKnapp("📂 Importer backup", "m-hoved m-full", () => handlinger.importer())));
         return;
     }
     const ul = mEl("div", { class: "m-liste" });
@@ -3325,6 +3331,10 @@ function tegnMKlasse() {
     liste.append(ul);
     if (frav.size) liste.append(mKnapp("Nullstill fravær i dag", "m-handling-rad", () => { k.fravaer.navn = []; lagre(); tegnElevfane(); tegnKart(); tegnMKlasse(); }));
     liste.append(mEl("p", { class: "m-hint" }, "Trykk på en elev for fravær, nivå, faste partnere og hvem eleven skal holdes unna."));
+    liste.append(mEl("div", { class: "m-seksjon" }, mEl("span", null, "FLYTTE KLASSER MELLOM ENHETER")));
+    liste.append(mEl("div", { class: "m-liste" },
+        mKnapp(["📂", mEl("span", { class: "fyll" }, "Importer backup", mEl("small", { style: "display:block;color:var(--muted);font-size:12.5px" }, "Hent klasser fra PC eller en annen enhet")), mEl("span", { class: "m-pil" }, "›")], "m-liste-rad", () => handlinger.importer()),
+        mKnapp(["💾", mEl("span", { class: "fyll" }, "Eksporter backup", mEl("small", { style: "display:block;color:var(--muted);font-size:12.5px" }, "Lagre alle klasser som en fil")), mEl("span", { class: "m-pil" }, "›")], "m-liste-rad", () => handlinger.eksporter())));
 }
 
 function limInnArk(inn) {
