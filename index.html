@@ -142,14 +142,18 @@ textarea{width:100%;resize:vertical;line-height:1.45}
 
 /* ---------- Hovedområde ---------- */
 .hoved{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;padding:16px 20px;overflow:hidden}
-.verktoy{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.verktoy{display:flex;flex-direction:column;margin-bottom:12px}
+/* Fanene (Kart/Grupper/Hjul) ligger øverst som arkfaner; knappene som hører til fanen står i panelet under */
+.verktoy-topp{display:flex;align-items:flex-end;gap:8px}
+.verktoy-topp #btnMeny{margin-bottom:6px}
+.verktoy-under{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;position:relative;z-index:1;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.skille-v{width:1px;align-self:stretch;background:var(--line);margin:2px 4px}
 .oppsettvelger{display:flex;align-items:center;gap:6px;color:var(--muted)}
 .oppsettvelger select{color:var(--ink)}
-.modus{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
-.modusknapp{border:none;background:none;padding:9px 13px;cursor:pointer;color:var(--muted);font-weight:600}
-.modusknapp:hover{color:var(--ink)}
-.modusknapp.aktiv{background:var(--accent-soft);color:var(--accent)}
-.modusknapp+.modusknapp{border-left:1px solid var(--line)}
+.modus{display:flex;gap:4px;align-items:flex-end}
+.modusknapp{border:1px solid var(--line);border-bottom:none;background:#e9ecf1;padding:8px 18px;cursor:pointer;color:var(--muted);font-weight:600;border-radius:10px 10px 0 0;margin-bottom:-1px;position:relative}
+.modusknapp:hover{color:var(--ink);background:#f1f3f6}
+.modusknapp.aktiv{background:#fff;color:var(--accent);padding:10px 20px 11px;z-index:2;box-shadow:inset 0 3px 0 var(--accent)}
 .gruppevelger{display:flex;align-items:center;gap:6px}
 .gruppevelger input{width:3.6em}
 .verktoy select{padding-right:4px}
@@ -636,14 +640,18 @@ body.mobil .sete.ledig{font-size:.8em}
 
     <main class="hoved">
         <div class="verktoy">
+          <div class="verktoy-topp">
             <button type="button" class="knapp" id="btnMeny" title="Skjul menyen for å gi kartet mer plass">◧</button>
-            <div class="modus">
+            <div class="modus" role="tablist">
                 <button type="button" class="modusknapp" data-visning="kart" title="Klassekart med pulter">🪑 Kart</button>
                 <button type="button" class="modusknapp" data-visning="grupper">👥 Grupper</button>
                 <button type="button" class="modusknapp" data-visning="hjul" title="Trekk en tilfeldig elev">🎡 Hjul</button>
             </div>
+          </div>
+          <div class="verktoy-under">
             <button type="button" class="knapp primar stor" id="btnGenerer">🎲 Nytt kart</button>
             <button type="button" class="knapp avslor-knapp" id="btnAvslor" title="Lager nytt kart / nye grupper og avslører dem én og én – fint å vise på tavla">✨ Avslør nye</button>
+            <span class="skille-v" aria-hidden="true"></span>
             <label class="oppsettvelger" id="metodeVelger" title="Gjelder bare det verktøyet du står i">Fordeling
                 <select id="metodeValg">
                     <option value="tilfeldig">Helt tilfeldig</option>
@@ -666,6 +674,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <button type="button" class="knapp" id="btnLyd" title="Slå lyd av/på">🔊</button>
             </span>
             <div class="fyll"></div>
+          </div>
         </div>
         <div class="rom-editor" id="romEditor" hidden>
             <div class="re-rad">
@@ -782,7 +791,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.2.4</p>
+            <p class="info-versjon">Klassekart · versjon 1.2.5</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
