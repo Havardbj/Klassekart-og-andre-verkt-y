@@ -508,6 +508,20 @@ body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,b
 .ios-steg b.nr{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
 .ios-ikon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:#eef2f7;flex:none}
 @media print{.installer,.m-ark,.m-ark-bak{display:none!important}}
+/* Klassekart på telefon: smale pulter med navnene over hverandre, så kartet blir høyt i stedet for bredt
+   og kan vises mye større på en stående skjerm */
+body.mobil .rom{gap:1.1em .9em}
+body.mobil .tavle{margin-bottom:1.6em;width:min(22em,80%)}
+body.mobil .bord{padding:.3em .35em .4em;gap:.2em}
+body.mobil .bord-nr{font-size:.68em}
+body.mobil .bord.s1{width:7.4em;min-height:0}
+body.mobil .bord.s2.rot-0,body.mobil .bord.s2.rot-180{width:7.4em;min-height:0}
+body.mobil .bord.s2.rot-0 .seter{flex-direction:column}
+body.mobil .bord.s2.rot-180 .seter{flex-direction:column-reverse}
+body.mobil .bord.s2.rot-90,body.mobil .bord.s2.rot-270{width:7.4em;min-height:0}
+body.mobil .bord .sete{font-size:1.12em;min-height:1.9em;padding:.25em .3em}
+body.mobil .bord.sg{width:12em}
+body.mobil .sete.ledig{font-size:.8em}
 
 @page{size:landscape;margin:10mm}
 @media print{
@@ -769,7 +783,7 @@ body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,b
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.2.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -3416,7 +3430,9 @@ const erInstallert = () => (window.matchMedia && window.matchMedia("(display-mod
 const erIOSEnhet = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const erFirefoxAndroid = () => /Android/.test(navigator.userAgent) && /Firefox\//.test(navigator.userAgent);
 const kanInstalleres = () => /^https?:$/.test(location.protocol);
-const installerKanVises = () => kanInstalleres() && !erInstallert() && (!!installHendelse || erIOSEnhet() || erFirefoxAndroid());
+const erAndroid = () => /Android/.test(navigator.userAgent);
+const erSamsung = () => /SamsungBrowser/.test(navigator.userAgent);
+const installerKanVises = () => kanInstalleres() && !erInstallert() && (!!installHendelse || erIOSEnhet() || erAndroid());
 window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault();
     installHendelse = e;
@@ -3445,14 +3461,27 @@ function visInstaller(fraMeny) {
         knapp = mKnapp("📲 Installer", "knapp primar", async () => {
             boks.hidden = true;
             const h = installHendelse; installHendelse = null;
-            try { h.prompt(); await h.userChoice; } catch (e) { /* avbrutt */ }
+            // Nettleseren viser sitt eget installer-vindu. Kommer det ikke (eller avbrytes), vises veiledningen.
+            let vist = false;
+            const reserve = setTimeout(() => { if (!vist) visAndroidVeiledning(); }, 1500);
+            const skjult = () => { vist = true; };
+            window.addEventListener("blur", skjult, { once: true });
+            document.addEventListener("visibilitychange", skjult, { once: true });
+            try {
+                await h.prompt();
+                const valg = await h.userChoice;
+                clearTimeout(reserve);
+                if (!vist && mArk) lukkArk();   // vinduet kom likevel – fjern veiledningen
+                vist = true;
+                if (valg && valg.outcome !== "accepted") visToast("Ingen fare – du finner «Installer som app» i klassemenyen senere.");
+            } catch (e) { clearTimeout(reserve); visAndroidVeiledning(); }
         });
     } else if (erIOSEnhet()) {
         tekst = "Legg Klassekart på Hjem-skjermen, så åpnes den som en app i fullskjerm.";
         knapp = mKnapp("Vis meg hvordan", "knapp primar", () => { boks.hidden = true; visIOSVeiledning(); });
     } else {
-        tekst = "Trykk menyen ⋮ i nettleseren og velg «Installer» eller «Legg til på startskjerm».";
-        knapp = null;
+        tekst = "Legg Klassekart på startskjermen, så åpnes den som en app i fullskjerm.";
+        knapp = mKnapp("Vis meg hvordan", "knapp primar", () => { boks.hidden = true; visAndroidVeiledning(); });
     }
     boks.append(mEl("div", { class: "installer-topp" }, mEl("img", { src: "icons/icon-192.png", alt: "" }),
         mEl("div", null, mEl("b", null, "Installer Klassekart"), mEl("span", null, tekst))));
@@ -3462,6 +3491,37 @@ function visInstaller(fraMeny) {
             try { localStorage.setItem("klassekart_installer_utsatt", String(Date.now())); } catch (e) { /* ikke viktig */ }
         }), knapp));
     boks.hidden = false;
+}
+// Android uten innebygd installer (Firefox, Samsung Internet, eller når Chrome ikke viser vinduet)
+function visAndroidVeiledning() {
+    const menyIkon = '<svg width="6" height="20" viewBox="0 0 6 20" fill="#1d6fb8"><circle cx="3" cy="3" r="2.2"/><circle cx="3" cy="10" r="2.2"/><circle cx="3" cy="17" r="2.2"/></svg>';
+    const hamburger = '<svg width="20" height="16" viewBox="0 0 20 16" stroke="#1d6fb8" stroke-width="2.2" stroke-linecap="round"><path d="M2 2h16M2 8h16M2 14h16"/></svg>';
+    const plussIkon = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1d6fb8" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="16" height="16" rx="4"/><path d="M10 6v8M6 10h8"/></svg>';
+    let nettleser, s1, s2;
+    if (erFirefoxAndroid()) {
+        nettleser = "Firefox";
+        s1 = `<b class="nr">1</b><span class="ios-ikon">${menyIkon}</span><span>Trykk <b>⋮</b> nederst til høyre (ved adressefeltet).</span>`;
+        s2 = `<b class="nr">2</b><span class="ios-ikon">${plussIkon}</span><span>Trykk <b>«Legg til på startskjerm»</b> (eller <b>«Installer»</b>). Du må kanskje bla litt ned i menyen.</span>`;
+    } else if (erSamsung()) {
+        nettleser = "Samsung Internet";
+        s1 = `<b class="nr">1</b><span class="ios-ikon">${hamburger}</span><span>Trykk <b>☰</b> nederst til høyre.</span>`;
+        s2 = `<b class="nr">2</b><span class="ios-ikon">${plussIkon}</span><span>Trykk <b>«Legg til side på»</b> og velg <b>«Startskjerm»</b>.</span>`;
+    } else {
+        nettleser = "Chrome";
+        s1 = `<b class="nr">1</b><span class="ios-ikon">${menyIkon}</span><span>Trykk <b>⋮</b> øverst til høyre i Chrome.</span>`;
+        s2 = `<b class="nr">2</b><span class="ios-ikon">${plussIkon}</span><span>Trykk <b>«Installer app»</b> eller <b>«Legg til på startsiden»</b>.</span>`;
+    }
+    aapneArk(inn => {
+        inn.append(arkHode("Legg til på startskjermen"));
+        const steg = mEl("div", { class: "ios-steg" });
+        const a = mEl("div"); a.innerHTML = s1;
+        const b = mEl("div"); b.innerHTML = s2;
+        const c = mEl("div"); c.innerHTML = `<b class="nr">3</b><span class="ios-ikon"><img src="icons/icon-192.png" alt="" style="width:26px;height:26px;border-radius:6px"></span><span>Bekreft med <b>«Installer»</b> eller <b>«Legg til»</b>. Åpne Klassekart fra startskjermen.</span>`;
+        steg.append(a, b, c);
+        inn.append(mEl("p", { class: "m-hint", style: "text-align:left;margin:0 0 4px" }, `Slik gjør du det i ${nettleser}:`));
+        inn.append(steg);
+        inn.append(mEl("p", { class: "m-hint", style: "text-align:left" }, "Ligger Klassekart allerede på startskjermen? Da kan du åpne den derfra."));
+    });
 }
 function visIOSVeiledning() {
     const delIkon = '<svg width="20" height="22" viewBox="0 0 20 22" fill="none" stroke="#1d6fb8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14V2M5.5 6.5 10 2l4.5 4.5"/><path d="M6 9H3v11h14V9h-3"/></svg>';
