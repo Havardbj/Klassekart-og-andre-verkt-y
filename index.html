@@ -858,7 +858,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.8</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.9</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1059,7 +1059,8 @@ function nyKlasseData() {
         grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null, roller: { paa: false, liste: [...STANDARD_ROLLER] }, rolleLogg: [] },
         hjul: { fjern: true, dato: idag(), ute: [] },
         bilder: {},
-        visBilder: false
+        visBilder: false,
+        bildeUtsnitt: 2
     };
 }
 function lesPar(liste) {
@@ -1143,6 +1144,7 @@ function normaliserKlasse(k) {
         if (typeof b === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(b) && b.length < 300000 && ut.elever.includes(navn)) ut.bilder[navn] = b;
     }
     ut.visBilder = k.visBilder === true;
+    ut.bildeUtsnitt = parseInt(k.bildeUtsnitt) || 1;
     const g = k.grupper || {};
     ut.grupper.modus = g.modus === "antall" ? "antall" : "storrelse";
     ut.grupper.storrelse = klem(parseInt(g.storrelse) || 3, 2, 10);
@@ -4294,14 +4296,50 @@ async function lagMiniatyrer(sider, elever) {
             const r = e.foto.rekt;
             const [ax, ay, bx, by] = vp.convertToViewportRectangle([r.x0, r.y0, r.x1, r.y1]);
             const x = Math.min(ax, bx), y = Math.min(ay, by), w = Math.abs(bx - ax), h = Math.abs(by - ay);
-            const s = Math.min(w, h);
-            const sx = x + (w - s) / 2, sy = y + (h - s) * 0.25;     // litt over midten, så hodet kommer med
-            e.bilde = tilMiniatyr(cv, sx, sy, s, s);
+            const u = ansiktsUtsnitt(cv, x, y, w, h);
+            e.bilde = tilMiniatyr(cv, u.sx, u.sy, u.s, u.s);
         }
     }
 }
+// Finner hodet i et portrettbilde (mot ensfarget bakgrunn) og lager et kvadratisk utsnitt rundt ansiktet,
+// så det fyller den runde rammen i stedet for hvit bakgrunn over hodet.
+function ansiktsUtsnitt(kilde, x, y, w, h) {
+    const fallback = () => { const s = Math.min(w, h) * 0.8; return { sx: x + (w - s) / 2, sy: y + Math.max(0, (h - s) * 0.3), s }; };
+    try {
+        const B = 96, H = Math.max(8, Math.round(B * h / w));
+        const c = document.createElement("canvas"); c.width = B; c.height = H;
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(kilde, x, y, w, h, 0, 0, B, H);
+        const d = ctx.getImageData(0, 0, B, H).data;
+        const px = (i, j) => { const o = (j * B + i) * 4; return [d[o], d[o + 1], d[o + 2]]; };
+        // Bakgrunn: snitt av de øverste hjørnene – må være noenlunde like
+        const hj = [px(2, 2), px(B - 3, 2), px(2, Math.round(H * 0.15)), px(B - 3, Math.round(H * 0.15))];
+        const bg = [0, 1, 2].map(k => hj.reduce((a, p) => a + p[k], 0) / hj.length);
+        const avvik = p => Math.abs(p[0] - bg[0]) + Math.abs(p[1] - bg[1]) + Math.abs(p[2] - bg[2]);
+        if (hj.some(p => avvik(p) > 45)) return fallback();
+        const ulik = (i, j) => avvik(px(i, j)) > 60;
+        // Toppen av hodet: første rad der en del av pikslene skiller seg fra bakgrunnen
+        let topp = -1;
+        for (let j = 0; j < H && topp < 0; j++) {
+            let n = 0; for (let i = 0; i < B; i++) if (ulik(i, j)) n++;
+            if (n >= B * 0.04) topp = j;
+        }
+        if (topp < 0 || topp > H * 0.6) return fallback();
+        // Bredden på hodet i båndet under toppen
+        let v = B, hoyre = -1;
+        const bunn = Math.min(H - 1, topp + Math.round(H * 0.3));
+        for (let j = topp; j <= bunn; j++) for (let i = 0; i < B; i++) if (ulik(i, j)) { if (i < v) v = i; if (i > hoyre) hoyre = i; }
+        if (hoyre <= v) return fallback();
+        const skala = w / B;
+        const hodeB = (hoyre - v + 1) * skala, midtX = x + ((v + hoyre + 1) / 2) * skala, toppY = y + topp * skala;
+        let s = klem(hodeB * 1.75, Math.min(w, h) * 0.45, Math.min(w, h));
+        let sx = midtX - s / 2, sy = toppY - s * 0.1;
+        sx = klem(sx, x, x + w - s); sy = klem(sy, y, y + h - s);
+        return { sx, sy, s };
+    } catch (e) { return fallback(); }
+}
 function tilMiniatyr(kilde, sx, sy, sw, sh) {
-    const STR = 128, c = document.createElement("canvas");
+    const STR = 160, c = document.createElement("canvas");
     c.width = c.height = STR;
     const ctx = c.getContext("2d");
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, STR, STR);
@@ -4524,6 +4562,23 @@ function fullforPdfImport(visning) {
 }
 
 // ================= Elevbilder =================
+// Bilder importert før versjon 1.3.9 ble klippet for vidt (mye bakgrunn over hodet) – zoom dem inn én gang
+async function forbedreGamleBilder() {
+    let endret = false;
+    for (const k of Object.values(data.klasser)) {
+        if ((k.bildeUtsnitt || 1) >= 2) continue;
+        for (const navn of Object.keys(k.bilder || {})) {
+            try {
+                const img = new Image(); img.src = k.bilder[navn]; await img.decode();
+                const u = ansiktsUtsnitt(img, 0, 0, img.naturalWidth, img.naturalHeight);
+                if (u.s < img.naturalWidth * 0.97) k.bilder[navn] = tilMiniatyr(img, u.sx, u.sy, u.s, u.s);
+            } catch (e) { /* behold bildet som det er */ }
+        }
+        k.bildeUtsnitt = 2; endret = true;
+    }
+    if (endret) { lagre(); oppdaterAlt(); }
+}
+setTimeout(() => forbedreGamleBilder(), 300);
 function seteFoto(s, navn, k) {
     if (!k || !k.visBilder) return;
     const b = elevBilde(navn, k);
@@ -4541,7 +4596,8 @@ $("bildeFil").addEventListener("change", function () {
     const navn = bildeFor, url = URL.createObjectURL(f), img = new Image();
     img.onload = () => {
         const s = Math.min(img.naturalWidth, img.naturalHeight);
-        k.bilder[navn] = tilMiniatyr(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) * 0.3, s, s);
+        const u = ansiktsUtsnitt(img, 0, 0, img.naturalWidth, img.naturalHeight);
+        k.bilder[navn] = tilMiniatyr(img, u.sx, u.sy, u.s, u.s);
         URL.revokeObjectURL(url);
         lagre(); oppdaterAlt();
         if (erMobilApp() && typeof byggArk === "function") byggArk();
