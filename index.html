@@ -381,6 +381,9 @@ body.romredigering .verktoy,body.romredigering .status{display:none}
 .tidtaker.innebygd .tid-oppgave{font-size:24px}
 .tidtaker.innebygd .tid-oppgaver button{padding:7px 12px;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.06);border-color:transparent}
 .sete.med-rolle{flex-direction:column;line-height:1.15;gap:.05em;white-space:normal}
+.sete.med-foto{flex-direction:column;gap:.2em;padding-top:.35em;line-height:1.15}
+.sete-foto{width:2.7em;height:2.7em;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none}
+.sete.fravaer .sete-foto{filter:grayscale(1)}
 .sete .rolle{font-size:.72em;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#1f2937;color:#fff;padding:10px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
 .toast.vis{opacity:1;transform:translate(-50%,0)}
@@ -735,6 +738,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <button type="button" class="knapp" id="btnHjulNullstill" title="Legg alle tilbake på hjulet">↺ Alle med igjen</button>
                 <button type="button" class="knapp" id="btnLyd" title="Slå lyd av/på">🔊</button>
             </span>
+            <label class="bryter liten-bryter" id="bilderVelger" title="Vis elevbildene i kart og grupper – fint for vikar og utskrift" hidden><input type="checkbox" id="visBilder"><span>📷 Bilder</span></label>
             <div class="fyll"></div>
           </div>
         </div>
@@ -854,7 +858,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.4</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.5</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1054,7 +1058,8 @@ function nyKlasseData() {
         visning: "kart",
         grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null, roller: { paa: false, liste: [...STANDARD_ROLLER] }, rolleLogg: [] },
         hjul: { fjern: true, dato: idag(), ute: [] },
-        bilder: {}
+        bilder: {},
+        visBilder: false
     };
 }
 function lesPar(liste) {
@@ -1137,6 +1142,7 @@ function normaliserKlasse(k) {
         const b = k.bilder[n], navn = ryddNavn(n);
         if (typeof b === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(b) && b.length < 300000 && ut.elever.includes(navn)) ut.bilder[navn] = b;
     }
+    ut.visBilder = k.visBilder === true;
     const g = k.grupper || {};
     ut.grupper.modus = g.modus === "antall" ? "antall" : "storrelse";
     ut.grupper.storrelse = klem(parseInt(g.storrelse) || 3, 2, 10);
@@ -2085,6 +2091,7 @@ function tegnGrupper() {
             if (avs && avs.skjult.has(navn)) { kort.append(el("div", "sete hemmelig", "?")); return; }
             const s = el("div", "sete elev");
             s.append(el("span", null, navn));
+            seteFoto(s, navn, k);
             const rolle = siste.roller && siste.roller[navn];
             if (rolle) { s.classList.add("med-rolle"); s.append(el("small", "rolle", rolle)); }
             if (avs) {
@@ -2652,6 +2659,8 @@ function tegnVisningsvalg() {
     if (k.grupper.modus === "antall") { tall.min = 2; tall.max = 15; tall.value = k.grupper.antall; }
     else { tall.min = 2; tall.max = 10; tall.value = k.grupper.storrelse; }
     $("btnRedigerRom").hidden = grupper || hjul;
+    $("bilderVelger").hidden = hjul || !Object.keys(k.bilder || {}).length;
+    $("visBilder").checked = k.visBilder;
 }
 
 function settVisning(v) {
@@ -2775,6 +2784,7 @@ function tegnRomkart() {
             } else if (navn) {
                 s.append(el("span", null, navn));
                 s.classList.add("elev");
+                seteFoto(s, navn, k);
                 if (avs && avs.sist === navn) s.classList.add("avslort");
                 const borte = frav.has(navn);
                 if (borte) s.classList.add("fravaer");
@@ -3103,6 +3113,11 @@ $("oppsettValg2").addEventListener("change", function () {
 $("oppsettMeny").addEventListener("click", e => { if (e.target.closest("button")) $("oppsettMeny").open = false; });
 document.addEventListener("click", e => { const m = $("oppsettMeny"); if (m.open && !m.contains(e.target)) m.open = false; });
 $("unngaGjentak").addEventListener("change", function () { klasse().innstillinger.unngaGjentak = this.checked; lagre(); tegnStatus(); });
+$("visBilder").addEventListener("change", function () {
+    const k = klasse(); if (!k) return;
+    k.visBilder = this.checked;
+    lagre(); tegnKart();
+});
 $("rollerPaa").addEventListener("change", function () {
     const k = klasse();
     k.grupper.roller.paa = this.checked;
@@ -3548,6 +3563,7 @@ function grupperArk(inn) {
     if (g.metode !== "tilfeldig" && !k.elever.some(x => k.interesse[x])) inn.append(mEl("p", { class: "m-hint" }, "Ingen elever har fått nivå ennå. Sett det på elevkortet under Klasse."));
     if (k.partnere.length + k.adskilt.length) inn.append(mRad("Faste partnere og adskilte", mEl("b", { class: "m-ok" }, "✓ følges alltid")));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "↺ Unngå samme grupper som sist"), mBryter(k.innstillinger.unngaGjentak, v => { k.innstillinger.unngaGjentak = v; lagre(); tegnStatus(); })));
+    if (Object.keys(k.bilder || {}).length) inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📷 Vis elevbilder", mEl("small", null, "Fint for vikar og utskrift")), mBryter(k.visBilder, v => { k.visBilder = v; lagre(); tegnKart(); })));
     const rl = g.roller;
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "🎭 Roller i gruppene", mEl("small", null, rl.liste.join(" · "))), mBryter(rl.paa, v => {
         rl.paa = v;
@@ -3571,6 +3587,7 @@ function kartFordelingArk(inn) {
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "Fyll bordene nærmest tavla først"), mBryter(k.innstillinger.fyllFremst, v => { k.innstillinger.fyllFremst = v; lagre(); })));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "Hold adskilte elever unna nabobord", mEl("small", null, "Også bordet ved siden av og foran/bak")), mBryter(k.innstillinger.adskillNaboer, v => { k.innstillinger.adskillNaboer = v; lagre(); tegnStatus(); })));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "↺ Unngå samme sidemann som sist", mEl("small", null, "Husker de siste gangene")), mBryter(k.innstillinger.unngaGjentak, v => { k.innstillinger.unngaGjentak = v; lagre(); tegnStatus(); })));
+    if (Object.keys(k.bilder || {}).length) inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📷 Vis elevbilder", mEl("small", null, "Fint for vikar og utskrift")), mBryter(k.visBilder, v => { k.visBilder = v; lagre(); tegnKart(); })));
     inn.append(mKnapp("🎲 Lag nytt kart", "m-hoved m-full", () => { vib(10); lukkArk(); genererKart(); }));
 }
 
@@ -4491,6 +4508,13 @@ function fullforPdfImport(visning) {
 }
 
 // ================= Elevbilder =================
+function seteFoto(s, navn, k) {
+    if (!k || !k.visBilder) return;
+    const b = elevBilde(navn, k);
+    if (!b) return;
+    const im = el("img", "sete-foto"); im.src = b; im.alt = ""; im.draggable = false;
+    s.prepend(im); s.classList.add("med-foto");
+}
 function elevBilde(navn, k = klasse()) { return (k && k.bilder && k.bilder[navn]) || null; }
 let bildeFor = null;
 function velgElevBilde(navn) { bildeFor = navn; $("bildeFil").click(); }
