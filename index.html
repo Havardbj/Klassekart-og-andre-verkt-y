@@ -244,6 +244,29 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .dialog p{margin:0;white-space:pre-line;line-height:1.45;font-size:15px}
 .dialog input{border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:15px;width:100%}
 .dialog-knapper{display:flex;justify-content:flex-end;gap:8px}
+.pdf-dialog{width:min(520px,100%);max-height:calc(100dvh - 32px)}
+.pdf-innhold{display:flex;flex-direction:column;gap:10px;min-height:0;flex:1;overflow:hidden}
+.pdf-melding{font-size:16px!important;text-align:center;padding:18px 4px}
+.pdf-melding.feil{text-align:left}
+.pdf-rad{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
+.pdf-seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.pdf-seg button{border:0;background:#fff;padding:7px 11px;font:inherit;font-size:14px;cursor:pointer;border-right:1px solid var(--line)}
+.pdf-seg button:last-child{border-right:0}
+.pdf-seg button.valgt{background:var(--accent,#2563eb);color:#fff}
+.pdf-bytt{font-size:14px;display:flex;align-items:center;gap:6px}
+.pdf-bytt input,.pdf-elev input,.pdf-maal input[type=radio]{width:auto!important;margin:0}
+.pdf-listetopp{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.pdf-liste{overflow:auto;border:1px solid var(--line);border-radius:10px;flex:1;min-height:120px;max-height:42vh}
+.pdf-elev{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px}
+.pdf-elev:last-child{border-bottom:0}
+.pdf-elev small{margin-left:auto;color:var(--muted);font-size:12px;text-align:right}
+.pdf-elev.av b{color:var(--muted);text-decoration:line-through;font-weight:400}
+.pdf-maal{display:flex;flex-direction:column;gap:8px;font-size:14px}
+.pdf-maal label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pdf-maal .pdf-klassenavn{width:auto!important;flex:1;min-width:120px;padding:6px 9px!important;font-size:14px!important}
+.pdf-knapp{margin-top:8px;width:100%}
+body.mobil .pdf-dialog{width:100%;max-height:calc(100dvh - 24px)}
+body.mobil .pdf-liste{max-height:none}
 .knapp.primar.fare{background:var(--bad);border-color:var(--bad)}
 .avslor-knapp{background:#fff8e1;border-color:#f3d27a;color:#7a5200;font-weight:600}
 .avslor-knapp:hover{background:#fff0c2}
@@ -337,6 +360,18 @@ button,.sete,.chip,.seg,.modusknapp,.fane{touch-action:manipulation}
 .re-info .kapasitet{padding:4px 9px;font-size:12.5px;color:var(--ink)}
 .rom-editor .meny-innhold{left:0}
 body.romredigering .verktoy,body.romredigering .status{display:none}
+.tid-oppgave{width:100%;border:none;border-bottom:2px dashed transparent;font-size:18px;font-weight:800;text-align:center;padding:6px 4px 4px;background:transparent;color:var(--ink);border-radius:0}
+.tid-oppgave:focus{outline:none;border-bottom-color:var(--accent)}
+.tid-oppgave::placeholder{color:#b0b6bf;font-weight:600;font-size:.8em}
+.tid-oppgaver{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:4px 0 2px}
+.tid-oppgaver button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font-size:12.5px;cursor:pointer;color:#374151}
+.tid-oppgaver button:hover{border-color:#c7ccd4}
+.tidtaker.stor .tid-oppgave{font-size:min(7vw,64px);padding:4px}
+.tidtaker.innebygd .tid-oppgave{font-size:24px}
+.tidtaker.innebygd .tid-oppgaver button{padding:7px 12px;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.06);border-color:transparent}
+.sete.med-rolle{flex-direction:column;line-height:1.15;gap:.05em;white-space:normal}
+.sete .rolle{font-size:.72em;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sete .pin{font-size:.75em;margin-right:.25em;flex:none}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#1f2937;color:#fff;padding:10px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
 .toast.vis{opacity:1;transform:translate(-50%,0)}
 .toast.feil{background:var(--bad)}
@@ -555,6 +590,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <hr>
                 <button type="button" data-handling="eksporter">💾 Eksporter backup</button>
                 <button type="button" data-handling="importer">📂 Importer backup</button>
+                <button type="button" data-handling="importerPdf">📄 Importer klasseliste (PDF)</button>
                 <hr>
                 <button type="button" data-handling="hjelp">❓ Kom i gang</button>
                 <button type="button" data-handling="om">🔒 Om og personvern</button>
@@ -589,6 +625,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <div class="felt-hode"><label for="eleverTekst">Navneliste</label><span class="teller" id="elevTeller"></span></div>
                 <textarea id="eleverTekst" rows="11" spellcheck="false" placeholder="Ett navn per linje …"></textarea>
                 <p class="hjelp" id="elevHjelp">Ett navn per linje. Endringer lagres automatisk.</p>
+                <button type="button" class="knapp pdf-knapp" id="btnPdfElever">📄 Hent navn fra klasseliste (PDF)</button>
             </div>
             <hr class="skille">
             <div class="felt">
@@ -601,6 +638,10 @@ body.mobil .sete.ledig{font-size:.8em}
         <!-- REGLER -->
         <section class="faneinnhold" data-fane="regler" hidden>
             <div class="personvern"><span>🙈</span><p class="hjelp">Reglene er uskarpe til du holder musepekeren over dem (eller trykker på dem på mobil), så de ikke vises hvis skjermen er delt med klassen.</p></div>
+            <div class="felt">
+                <label class="bryter"><input type="checkbox" id="unngaGjentak"><span>↺ Unngå samme sidemann og gruppe som sist<small>Appen husker de siste gangene og prøver å blande på nytt. Regler og nivå går foran.</small></span></label>
+            </div>
+            <hr class="skille">
             <div class="felt">
                 <span class="felt-tittel">🤝 Faste partnere</span>
                 <p class="hjelp">Elevene sitter alltid ved samme bord. Nyttig for elever som trenger en trygg sidemann.</p>
@@ -622,6 +663,12 @@ body.mobil .sete.ledig{font-size:.8em}
                     <button type="button" class="knapp" id="btnAdskilt">Legg til</button>
                 </div>
                 <div class="regelliste sensitiv" id="adskiltListe" tabindex="0"></div>
+            </div>
+            <hr class="skille">
+            <div class="felt">
+                <span class="felt-tittel" id="fasteTittel">📌 Faste plasser</span>
+                <p class="hjelp">For eksempel foran på grunn av syn eller hørsel. Gjelder klassekartet i dette oppsettet.</p>
+                <div class="regelliste" id="fasteListe"></div>
             </div>
         </section>
 
@@ -667,6 +714,10 @@ body.mobil .sete.ledig{font-size:.8em}
                     <option value="antall">Antall grupper</option>
                 </select>
                 <input type="number" id="gruppeTall" min="2" max="15" aria-label="Tall">
+                <span class="skille-v" aria-hidden="true"></span>
+                <label class="bryter liten-bryter" title="Del ut roller som ordstyrer, sekretær, tidtaker og presentatør"><input type="checkbox" id="rollerPaa"><span>🎭 Roller</span></label>
+                <button type="button" class="knapp liten" id="btnRollerEndre" title="Endre hvilke roller som deles ut">✏️</button>
+                <button type="button" class="knapp liten" id="btnNyeRoller" title="Del ut rollene på nytt i de samme gruppene">↻ Nye roller</button>
             </span>
             <span class="hjulvelger" id="hjulVelger" hidden>
                 <label class="bryter liten-bryter"><input type="checkbox" id="hjulFjern"><span>Ta ut den som trekkes</span></label>
@@ -791,7 +842,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.2.5</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -804,6 +855,15 @@ body.mobil .sete.ledig{font-size:.8em}
         <button type="button" id="tidStor" title="Stor visning (for tavla)">⤢</button>
         <button type="button" id="tidSkjul" title="Skjul (tiden går videre)">–</button>
         <button type="button" id="tidLukk" title="Stopp og lukk">✕</button>
+    </div>
+    <input type="text" id="tidOppgave" class="tid-oppgave" placeholder="Hva skal elevene gjøre? (vises stort)" maxlength="80" autocomplete="off" enterkeyhint="done">
+    <div class="tid-oppgaver" id="tidOppgaver">
+        <button type="button" data-oppg="Jobb alene">🧑 Alene</button>
+        <button type="button" data-oppg="Jobb i par">👥 Par</button>
+        <button type="button" data-oppg="Diskuter i gruppa">💬 Gruppe</button>
+        <button type="button" data-oppg="Les og noter">📖 Les</button>
+        <button type="button" data-oppg="Rydd plassen din">🧹 Rydd</button>
+        <button type="button" data-oppg="" title="Fjern teksten">✕</button>
     </div>
     <div class="tid-visning" id="tidVisning">05:00</div>
     <div class="tid-melding" id="tidMelding"></div>
@@ -849,6 +909,13 @@ body.mobil .sete.ledig{font-size:.8em}
     </div>
 </div>
 <input type="file" id="importFil" hidden>
+<input type="file" id="pdfFil" accept="application/pdf,.pdf" hidden>
+<div class="dialog-bak" id="pdfVindu" hidden>
+    <div class="dialog pdf-dialog" role="dialog" aria-modal="true" aria-labelledby="pdfTittel">
+        <div class="info-hode"><h2 id="pdfTittel">📄 Importer klasseliste</h2><button type="button" class="regel-fjern" id="pdfLukk" title="Lukk">×</button></div>
+        <div class="pdf-innhold" id="pdfInnhold"></div>
+    </div>
+</div>
 
 <script>
 "use strict";
@@ -956,8 +1023,9 @@ function metodeStatus(k, brukt, linje, knapp) {
     }
 }
 function nyttRom(navn = "Vanlig") {
-    return { navn, rader: 4, pulter: 4, seter: 2, skjulte: [], roterte: {}, sisteKart: null };
+    return { navn, rader: 4, pulter: 4, seter: 2, skjulte: [], roterte: {}, faste: {}, sisteKart: null };
 }
+const STANDARD_ROLLER = ["🗣️ Ordstyrer", "✍️ Sekretær", "⏱ Tidtaker", "🎤 Presentatør"];
 function nyKlasseData() {
     return {
         elever: [],
@@ -965,11 +1033,12 @@ function nyKlasseData() {
         interesse: {},
         partnere: [],
         adskilt: [],
-        innstillinger: { metode: "tilfeldig", fyllFremst: true, adskillNaboer: true },
+        innstillinger: { metode: "tilfeldig", fyllFremst: true, adskillNaboer: true, unngaGjentak: true },
+        historikk: { kart: [], grupper: [] },
         rom: [nyttRom()],
         aktivtRom: 0,
         visning: "kart",
-        grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null },
+        grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null, roller: { paa: false, liste: [...STANDARD_ROLLER] }, rolleLogg: [] },
         hjul: { fjern: true, dato: idag(), ute: [] }
     };
 }
@@ -999,6 +1068,11 @@ function normaliserRom(r) {
         const v = +r.roterte[id];
         if (+id < maks && [90, 180, 270].includes(v)) ut.roterte[id] = v;
     }
+    ut.faste = {};
+    for (const navn in (r.faste || {})) {
+        const f = r.faste[navn];
+        if (f && Number.isInteger(+f.id) && Number.isInteger(+f.i) && +f.id < maks && +f.i < ut.seter && !ut.skjulte.includes(+f.id)) ut.faste[ryddNavn(navn)] = { id: +f.id, i: +f.i };
+    }
     const sk = r.sisteKart;
     if (sk && sk.plassering && typeof sk.plassering === "object") {
         const p = {};
@@ -1027,6 +1101,13 @@ function normaliserKlasse(k) {
     if (["tilfeldig", "interesse_blandet", "interesse_samlet"].includes(inn.metode)) ut.innstillinger.metode = inn.metode;
     if (typeof inn.fyllFremst === "boolean") ut.innstillinger.fyllFremst = inn.fyllFremst;
     if (typeof inn.adskillNaboer === "boolean") ut.innstillinger.adskillNaboer = inn.adskillNaboer;
+    if (typeof inn.unngaGjentak === "boolean") ut.innstillinger.unngaGjentak = inn.unngaGjentak;
+    const hist = k.historikk || {};
+    for (const t of ["kart", "grupper"]) {
+        ut.historikk[t] = (Array.isArray(hist[t]) ? hist[t] : [])
+            .filter(e => e && Array.isArray(e.par)).slice(0, 6)
+            .map(e => ({ dato: String(e.dato || ""), par: e.par.map(String) }));
+    }
     if (Array.isArray(k.rom) && k.rom.length) ut.rom = k.rom.map(normaliserRom);
     else if (k.rom && typeof k.rom === "object") ut.rom = [normaliserRom(Object.assign({ navn: "Vanlig" }, k.rom))];
     ut.aktivtRom = klem(parseInt(k.aktivtRom) || 0, 0, ut.rom.length - 1);
@@ -1047,14 +1128,21 @@ function normaliserKlasse(k) {
             dato: String(g.siste.dato || idag()),
             grupper: g.siste.grupper.filter(Array.isArray).map(x => x.filter(Boolean).map(String)),
             merknader: Array.isArray(g.siste.merknader) ? g.siste.merknader : [],
-            metode: METODE_NAVN[g.siste.metode] ? g.siste.metode : null
+            metode: METODE_NAVN[g.siste.metode] ? g.siste.metode : null,
+            roller: g.siste.roller && typeof g.siste.roller === "object" ? Object.assign({}, g.siste.roller) : null
         };
     }
+    const rl = g.roller || {};
+    ut.grupper.roller = {
+        paa: !!rl.paa,
+        liste: Array.isArray(rl.liste) && rl.liste.filter(Boolean).length ? rl.liste.map(String).filter(Boolean).slice(0, 8) : [...STANDARD_ROLLER]
+    };
+    ut.grupper.rolleLogg = (Array.isArray(g.rolleLogg) ? g.rolleLogg : []).filter(e => e && e.roller).slice(0, 4);
     return ut;
 }
 
 const klasse = () => data.klasser[data.aktivKlasse] || null;
-const rom = () => { const k = klasse(); return k ? k.rom[k.aktivtRom] : null; };
+const rom = () => { const k = klasse(), r = k ? k.rom[k.aktivtRom] : null; if (r && !r.faste) r.faste = {}; return r; };
 function aktiveBord(r) {
     const ut = [];
     for (let i = 0; i < r.rader * r.pulter; i++) if (!r.skjulte.includes(i)) ut.push(i);
@@ -1076,7 +1164,78 @@ function gjeldendeKart(r) {
 // ================= Lagring =================
 
 let lagretTimer = null;
+// ---------- Historikk: hvem satt sammen de siste gangene ----------
+function parAv(sett) {
+    const par = [];
+    for (const g of sett) {
+        const m = g.filter(Boolean);
+        for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) par.push(parNokkel(m[i], m[j]));
+    }
+    return par;
+}
+function synkHistorikk(k) {
+    if (!k || !k.historikk) return;
+    const sett = (type, grupper) => {
+        const h = k.historikk[type];
+        const e = { dato: idag(), par: parAv(grupper) };
+        if (h.length && h[0].dato === idag()) h[0] = e; else { h.unshift(e); if (h.length > 6) h.length = 6; }
+    };
+    const r = k.rom[k.aktivtRom];
+    if (r && r.sisteKart && r.sisteKart.dato === idag()) sett("kart", Object.values(r.sisteKart.plassering));
+    if (k.grupper.siste && k.grupper.siste.dato === idag()) {
+        sett("grupper", k.grupper.siste.grupper);
+        if (k.grupper.siste.roller) {
+            const l = k.grupper.rolleLogg, e = { dato: idag(), roller: k.grupper.siste.roller };
+            if (l.length && l[0].dato === idag()) l[0] = e; else { l.unshift(e); if (l.length > 4) l.length = 4; }
+        }
+    }
+}
+// Vekter for par som har sittet sammen tidligere dager (nyeste teller mest). Dagens kart regnes ikke med.
+function historikkVekter(k, type) {
+    if (!k.innstillinger.unngaGjentak) return null;
+    const vekt = [8, 5, 3, 2, 1, 1], m = new Map();
+    let i = 0;
+    for (const e of k.historikk[type]) {
+        if (e.dato === idag()) continue;
+        const w = vekt[i++] || 0;
+        for (const p of e.par) m.set(p, (m.get(p) || 0) + w);
+    }
+    return m.size ? m : null;
+}
+// ---------- Roller i gruppene (går på rundgang: unngår samme rolle som sist) ----------
+function delUtRoller(k) {
+    const s = k.grupper.siste;
+    if (!s) return;
+    const liste = k.grupper.roller.liste;
+    const forrige = (k.grupper.rolleLogg.find(e => e.dato !== idag()) || {}).roller || {};
+    const roller = {};
+    for (const g of s.grupper) {
+        let beste = null, bp = Infinity;
+        for (let f = 0; f < 40; f++) {
+            const r = blande(liste.slice(0, g.length)), t = {};   // rekkefølgen i lista = viktigst først
+            let p = 0;
+            g.forEach((n, i) => { if (i < r.length) { t[n] = r[i]; if (forrige[n] === r[i]) p++; } });
+            if (p < bp) { bp = p; beste = t; if (!p) break; }
+        }
+        Object.assign(roller, beste);
+    }
+    s.roller = roller;
+}
+function gjentakInfo(k, type, sett) {
+    if (!k.innstillinger.unngaGjentak) return null;
+    const forrige = forrigeHistorikk(k, type);
+    if (!forrige) return null;
+    const gamle = new Set(forrige.par), partner = new Set(k.partnere.map(([a, b]) => parNokkel(a, b)));
+    const like = parAv(sett).filter(p => gamle.has(p) && !partner.has(p)).length;
+    if (type === "kart") return like ? `↺ ${like} ${like === 1 ? "par sitter" : "par sitter"} sammen som sist` : "↺ ny sidemann for alle";
+    return like ? `↺ ${like} par fra forrige gang` : "↺ ingen par fra forrige gang";
+}
+function forrigeHistorikk(k, type) {
+    return k.historikk[type].find(e => e.dato !== idag()) || null;
+}
+
 function lagre() {
+    try { synkHistorikk(klasse()); } catch (e) { /* historikk er ikke kritisk */ }
     try {
         localStorage.setItem(LAGRING, JSON.stringify(data));
         const s = $("lagretStatus");
@@ -1187,6 +1346,7 @@ const handlinger = {
         visToast("Backupen er lastet ned.");
     },
     importer() { $("importFil").click(); },
+    importerPdf() { $("pdfFil").click(); },
     hjelp() { visInfo("hjelp"); },
     om() { visInfo("om"); }
 };
@@ -1303,6 +1463,23 @@ function tegnRegler() {
         if (kjent.has(for_)) s.value = for_;
     }
     tegnRegelliste($("partnerListe"), k.partnere, "↔", "partnere", kjent);
+    $("unngaGjentak").checked = k.innstillinger.unngaGjentak;
+    // Faste plasser i det aktive oppsettet
+    const fl = $("fasteListe");
+    fl.innerHTML = "";
+    const fr = rom(), aktiveB = aktiveBord(fr), faste = Object.keys(fr.faste || {}).sort((a, b) => a.localeCompare(b, "no"));
+    $("fasteTittel").textContent = `📌 Faste plasser i «${fr.navn}»`;
+    if (!faste.length) fl.append(el("p", "tom-liste", "Ingen faste plasser. Trykk på en elev i kartet og velg «📌 Fast plass her»."));
+    for (const n of faste) {
+        const f = fr.faste[n];
+        const rad = el("div", "regel");
+        rad.append(el("span", null, `${n} – Bord ${aktiveB.indexOf(f.id) + 1}` + (fr.seter === 2 ? (f.i === 0 ? ", venstre" : ", høyre") : fr.seter > 2 ? `, plass ${f.i + 1}` : "")));
+        const x = el("button", "regel-fjern", "×");
+        x.type = "button"; x.title = "Fjern fast plass";
+        x.addEventListener("click", () => { delete fr.faste[n]; lagre(); tegnRegler(); tegnKart(); });
+        rad.append(x);
+        fl.append(rad);
+    }
     tegnRegelliste($("adskiltListe"), k.adskilt, "≠", "adskilt", kjent);
 
     const varsel = $("partnerVarsel");
@@ -1432,6 +1609,7 @@ async function brukMal(mal) {
     const { R, P } = malStorrelse(mal, antallBord, r.seter);
     const m = malMaske(mal, R, P);
     Object.assign(r, { rader: R, pulter: P, skjulte: m.skjulte, roterte: m.roterte, mal, sisteKart: null });
+    for (const n in r.faste) if (r.faste[n].id >= R * P || m.skjulte.includes(r.faste[n].id)) delete r.faste[n];
     lagre();
     tegnRomfane(); tegnRegler(); tegnKart();
     const navn = { rekker: "Rekker", hestesko: "Hestesko" }[mal];
@@ -1464,6 +1642,10 @@ function endreRom() {
     const nyRot = {};
     for (const id in r.roterte) { const n = flytt(+id); if (n >= 0) nyRot[n] = r.roterte[id]; }
     r.roterte = nyRot;
+    for (const n in r.faste) {
+        const ny = flytt(r.faste[n].id);
+        if (ny < 0 || r.faste[n].i >= seter) delete r.faste[n]; else r.faste[n].id = ny;
+    }
     if (r.mal) Object.assign(r, malMaske(r.mal, rader, pulter));   // hestesko beholder formen
     const haddeKart = !!gjeldendeKart(r);
     r.rader = rader; r.pulter = pulter; r.seter = seter;
@@ -1574,13 +1756,47 @@ function lagKart(k, r, valg = {}) {
     // 2) Adskillelse
     const sep = k.adskilt.filter(([a, b]) => til.has(a) && til.has(b));
 
+    // 2b) Faste plasser: enheten til en elev med fast plass låses til den pulten
+    const laast = {};          // enhet → pult
+    const fastSete = {};       // elev → { id, i }
+    if (valg.faste) {
+        const brukt = {};
+        for (const navn in valg.faste) {
+            const f = valg.faste[navn];
+            if (!til.has(navn) || !aktive.includes(f.id) || f.i >= S) continue;
+            const u = enheter.findIndex(g => g.includes(navn));
+            if (u < 0) continue;
+            if (laast[u] !== undefined && laast[u] !== f.id) continue;
+            const plass = (brukt[f.id] || 0) + (laast[u] === undefined ? enheter[u].length : 0);
+            if (plass > S) continue;
+            if (laast[u] === undefined) { laast[u] = f.id; brukt[f.id] = plass; }
+            fastSete[navn] = f;
+        }
+    }
+    const laasteBord = new Set(Object.values(laast));
+    const laastEnhet = u => laast[u] !== undefined;
+
     // 3) Pakk enhetene på bord. «mal» = hvor mange elever hvert bord skal ha
     function pakk(mal) {
         for (let forsok = 0; forsok < 80; forsok++) {
             const rest = blande([...mal]);
             const bord = rest.map(() => []);
-            const rekke = blande([...enheter.keys()]).sort((x, y) => enheter[y].length - enheter[x].length);
+            const bordPult = {};   // bord-indeks → låst pult
             let ok = true;
+            // Låste enheter først: samme pult → samme bord, ulike pulter → ulike bord
+            for (const pult of laasteBord) {
+                const us = Object.keys(laast).map(Number).filter(u => laast[u] === pult);
+                const len = us.reduce((s, u) => s + enheter[u].length, 0);
+                const kand = [];
+                for (let b = 0; b < bord.length; b++) if (bordPult[b] === undefined && rest[b] >= len) kand.push(b);
+                if (!kand.length) { ok = false; break; }
+                const b = kand[tilfeldig(kand.length)];
+                bordPult[b] = pult;
+                for (const u of us) bord[b].push(u);
+                rest[b] -= len;
+            }
+            if (!ok) continue;
+            const rekke = blande([...enheter.keys()].filter(u => !laastEnhet(u))).sort((x, y) => enheter[y].length - enheter[x].length);
             for (const u of rekke) {
                 const len = enheter[u].length;
                 const kand = [];
@@ -1590,11 +1806,11 @@ function lagKart(k, r, valg = {}) {
                 bord[b].push(u);
                 rest[b] -= len;
             }
-            if (ok) return bord;
+            if (ok) { bord.pult = bordPult; return bord; }
         }
         return null;
     }
-    const minBord = Math.min(aktive.length, valg.antallBord || Math.ceil(n / S));
+    const minBord = Math.min(aktive.length, Math.max(valg.antallBord || Math.ceil(n / S), laasteBord.size));
     function lagStart() {
         let bordListe = null;
         // Jevn fordeling: f.eks. 14 elever i grupper på 3 → 3+3+3+3+2, ikke 3+3+3+3+1+1
@@ -1604,16 +1820,27 @@ function lagKart(k, r, valg = {}) {
         }
         if (!bordListe) bordListe = pakk(Array(aktive.length).fill(S));
         if (!bordListe) return null;
-        const valgte = inn.fyllFremst ? aktive.slice(0, bordListe.length) : blande([...aktive]).slice(0, bordListe.length);
-        blande(bordListe);
+        const bordPult = bordListe.pult || {};
+        let valgte = inn.fyllFremst ? aktive.slice(0, bordListe.length) : blande([...aktive]).slice(0, bordListe.length);
+        // Låste pulter må være med
+        for (const pult of laasteBord) {
+            if (valgte.includes(pult)) continue;
+            for (let i = valgte.length - 1; i >= 0; i--) if (!laasteBord.has(valgte[i])) { valgte[i] = pult; break; }
+        }
         const t = {};
         aktive.forEach(id => { t[id] = []; });
-        valgte.forEach((id, i) => { t[id] = bordListe[i]; });
+        const frie = [];
+        bordListe.forEach((b, i) => { if (bordPult[i] !== undefined) t[bordPult[i]] = b; else frie.push(b); });
+        blande(frie);
+        valgte.filter(id => !laasteBord.has(id)).forEach((id, i) => { if (frie[i]) t[id] = frie[i]; });
         return t;
     }
     let start = lagStart();
     if (!start) {
         enheter = tilstede.map(x => [x]);
+        for (const u in laast) delete laast[u];
+        laasteBord.clear();
+        tilstede.forEach((x, u) => { if (fastSete[x] && !laasteBord.has(fastSete[x].id)) { laast[u] = fastSete[x].id; laasteBord.add(fastSete[x].id); } });
         merknader.push({ tekst: valg.grupper ? "Fikk ikke alle faste partnere i samme gruppe denne gangen." : "Fikk ikke plass til alle faste partnere ved samme bord denne gangen." });
         start = lagStart();
     }
@@ -1625,6 +1852,8 @@ function lagKart(k, r, valg = {}) {
         return (ra === rb && Math.abs(ca - cb) === 1) || (ca === cb && Math.abs(ra - rb) === 1);
     };
     const sjekkAlene = S >= 2 && inn.fyllFremst;
+    const hist = valg.historikk || null;
+    const partnerPar = new Set(k.partnere.map(([a, b]) => parNokkel(a, b)));
     function poeng(t) {
         const bordAv = {};
         let p = 0;
@@ -1635,6 +1864,13 @@ function lagKart(k, r, valg = {}) {
             if (!medl.length) continue;
             const rr = Math.floor(id / P);
             radBrukt[rr] = (radBrukt[rr] || 0) + 1;
+            if (hist) {   // samme sidemann / gruppe som de siste gangene
+                for (let i = 0; i < medl.length; i++)
+                    for (let j = i + 1; j < medl.length; j++) {
+                        const nk = parNokkel(medl[i], medl[j]);
+                        if (!partnerPar.has(nk)) p += hist.get(nk) || 0;
+                    }
+            }
             if (inn.metode === "interesse_blandet") {
                 p += Math.abs(medl.reduce((s, x) => s + verdi(x), 0));
             } else if (inn.metode === "interesse_samlet") {
@@ -1659,7 +1895,8 @@ function lagKart(k, r, valg = {}) {
     for (let runde = 0; runde < 8 && bestePoeng > 0; runde++) {
         const t = runde === 0 ? start : (lagStart() || start);
         let p = poeng(t);
-        const brukte = inn.fyllFremst ? aktive.filter(id => t[id].length) : aktive;
+        const brukte = (inn.fyllFremst ? aktive.filter(id => t[id].length) : aktive);
+        const flyttbare = brukte.filter(id => !laasteBord.has(id));
         if (brukte.length < 2) { if (p < bestePoeng) { bestePoeng = p; beste = t; } continue; }
         for (let steg = 0; steg < 3000 && p > 0; steg++) {
             const a = brukte[tilfeldig(brukte.length)], b = brukte[tilfeldig(brukte.length)];
@@ -1667,14 +1904,16 @@ function lagKart(k, r, valg = {}) {
             if (Math.random() < 0.75) {
                 if (!t[a].length || !t[b].length) continue;
                 const ia = tilfeldig(t[a].length), len = enheter[t[a][ia]].length;
+                if (laastEnhet(t[a][ia])) continue;
                 const kand = [];
-                t[b].forEach((u, i) => { if (enheter[u].length === len) kand.push(i); });
+                t[b].forEach((u, i) => { if (enheter[u].length === len && !laastEnhet(u)) kand.push(i); });
                 if (!kand.length) continue;
                 const ib = kand[tilfeldig(kand.length)];
                 [t[a][ia], t[b][ib]] = [t[b][ib], t[a][ia]];
                 const np = poeng(t);
                 if (np <= p) p = np; else [t[a][ia], t[b][ib]] = [t[b][ib], t[a][ia]];
             } else {
+                if (laasteBord.has(a) || laasteBord.has(b)) continue;
                 [t[a], t[b]] = [t[b], t[a]];
                 const np = poeng(t);
                 if (np <= p) p = np; else [t[a], t[b]] = [t[b], t[a]];
@@ -1685,14 +1924,23 @@ function lagKart(k, r, valg = {}) {
 
     // 6) Lag plasseringen – partnere sitter rett ved siden av hverandre
     for (const id of aktive) {
-        blande([...beste[id]]).flatMap(u => enheter[u]).forEach((x, i) => { plassering[id][i] = x; });
+        const medl = blande([...beste[id]]).flatMap(u => enheter[u]);
+        // Elever med fast plass får sitt eget sete, de andre fyller resten
+        const rad = plassering[id];
+        for (const x of medl) if (fastSete[x] && fastSete[x].id === id && !rad[fastSete[x].i]) rad[fastSete[x].i] = x;
+        let pos = 0;
+        for (const x of medl) {
+            if (rad.includes(x)) continue;
+            while (pos < S && rad[pos]) pos++;
+            rad[pos] = x;
+        }
     }
     // Én elev på dobbeltpult: sett eleven inntil nærmeste opptatte nabopult
     if (S === 2 && !valg.grupper) {
         const opptatt = j => plassering[j] && plassering[j].some(Boolean);
         for (const id of aktive) {
             const rad = plassering[id];
-            if (rad.filter(Boolean).length !== 1) continue;
+            if (rad.filter(Boolean).length !== 1 || laasteBord.has(id)) continue;
             const navn = rad.find(Boolean), c = id % P;
             const h = c + 1 < P && opptatt(id + 1), v = c > 0 && opptatt(id - 1);
             const motHoyre = h && !v ? true : v && !h ? false : c < (P - 1) / 2;
@@ -1709,7 +1957,7 @@ function genererKart() {
     if (redigerRom) { redigerRom = false; tegnRomfane(); }
     if (!k.elever.length) { visToast("Legg inn elever først."); velgFane("elever"); return; }
     if (!aktiveBord(r).length) { visToast("Rommet har ingen bord."); redigerRom = true; tegnRomfane(); tegnKart(); return; }
-    const { plassering, merknader } = lagKart(k, r);
+    const { plassering, merknader } = lagKart(k, r, { historikk: historikkVekter(k, "kart"), faste: r.faste });
     r.sisteKart = { dato: idag(), plassering, merknader, metode: k.innstillinger.metode };
     lagre();
     tegnKart();
@@ -1740,12 +1988,13 @@ function genererGrupper() {
     const { G, S } = gruppeOppsett(k, n);
     const virtueltRom = { rader: 1, pulter: G, seter: S, skjulte: [], roterte: {} };
     const { plassering, merknader } = lagKart(k, virtueltRom, {
-        grupper: true, antallBord: G,
+        grupper: true, antallBord: G, historikk: historikkVekter(k, "grupper"),
         innstillinger: { adskillNaboer: false, fyllFremst: true, metode: k.grupper.metode }
     });
     const grupper = Object.keys(plassering).sort((a, b) => a - b)
         .map(id => plassering[id].filter(Boolean)).filter(x => x.length);
-    k.grupper.siste = { dato: idag(), grupper, merknader: merknader.filter(m => !/oppsettet|plasser,/.test(m.tekst)), metode: k.grupper.metode };
+    k.grupper.siste = { dato: idag(), grupper, merknader: merknader.filter(m => !/oppsettet|plasser,/.test(m.tekst)), metode: k.grupper.metode, roller: null };
+    if (k.grupper.roller.paa) delUtRoller(k);
     lagre();
     tegnKart();
     const gEl = $("grupper");
@@ -1794,6 +2043,8 @@ function tegnGrupper() {
             if (avs && avs.skjult.has(navn)) { kort.append(el("div", "sete hemmelig", "?")); return; }
             const s = el("div", "sete elev");
             s.append(el("span", null, navn));
+            const rolle = siste.roller && siste.roller[navn];
+            if (rolle) { s.classList.add("med-rolle"); s.append(el("small", "rolle", rolle)); }
             if (avs) {
                 if (avs.sist === navn) s.classList.add("avslort");
                 kort.append(s);
@@ -1871,6 +2122,7 @@ function tegnGruppeStatus() {
     const s = gruppeStatus(k, siste.grupper);
     if (siste.dato !== idag()) linje("advarsel", `Disse gruppene ble laget ${formaterDato(siste.dato).toLowerCase()}. Trykk «Nye grupper» for nye.`);
     const deler = [`${s.plassert} elever i ${siste.grupper.length} grupper`];
+    const gjG = gjentakInfo(k, "grupper", siste.grupper); if (gjG) deler.push(gjG);
     if (s.borte) deler.push(`${s.borte} markert borte`);
     const harRegler = k.partnere.length + k.adskilt.length > 0;
     if (siste.metode && siste.metode !== "tilfeldig") deler.push("fordelt: " + METODE_NAVN[siste.metode]);
@@ -2230,7 +2482,7 @@ function startAvsloring() {
     const rekke = [];
     if (grupper) {
         ((k.grupper.siste && k.grupper.siste.grupper) || []).forEach((g, gi) =>
-            g.forEach(n => { if (!frav.has(n)) rekke.push({ navn: n, sted: "Gruppe " + (gi + 1) }); }));
+            g.forEach(n => { if (!frav.has(n)) { const rl = k.grupper.siste.roller && k.grupper.siste.roller[n]; rekke.push({ navn: n, sted: "Gruppe " + (gi + 1) + (rl ? " · " + rl : "") }); } }));
     } else {
         const r = rom(), kart = gjeldendeKart(r);
         if (kart) {
@@ -2344,6 +2596,9 @@ function tegnVisningsvalg() {
     $("oppsettVelger").hidden = grupper || hjul;
     $("gruppeVelger").hidden = !grupper;
     $("hjulVelger").hidden = !hjul;
+    $("rollerPaa").checked = k.grupper.roller.paa;
+    $("btnRollerEndre").hidden = !k.grupper.roller.paa;
+    $("btnNyeRoller").hidden = !(k.grupper.roller.paa && k.grupper.siste);
     $("hjulFjern").checked = k.hjul.fjern;
     $("gruppeModus").value = k.grupper.modus;
     const tall = $("gruppeTall");
@@ -2418,6 +2673,7 @@ function tegnRomStatus() {
     const s = regelstatus(k, r, kart.plassering);
     if (kart.dato !== idag()) linje("advarsel", `Dette kartet ble laget ${formaterDato(kart.dato).toLowerCase()}. Trykk «Nytt kart» for å lage et nytt for i dag.`);
     const deler = [`${s.plassert} elever plassert`];
+    const gjK = gjentakInfo(k, "kart", Object.values(kart.plassering)); if (gjK) deler.push(gjK);
     if (s.borteIKart) deler.push(`${s.borteIKart} markert borte`);
     const harRegler = k.partnere.length + k.adskilt.length > 0;
     const brudd = s.sepBrudd.length + s.partnerBrudd.length;
@@ -2472,6 +2728,8 @@ function tegnRomkart() {
             } else if (navn) {
                 s.append(el("span", null, navn));
                 s.classList.add("elev");
+                const fp = r.faste && r.faste[navn];
+                if (fp && fp.id === id && fp.i === i) { s.prepend(el("span", "pin", "📌")); s.title = "Fast plass"; }
                 if (avs && avs.sist === navn) s.classList.add("avslort");
                 const borte = frav.has(navn);
                 if (borte) s.classList.add("fravaer");
@@ -2583,7 +2841,26 @@ function visValg() {
     const b2 = el("button", "knapp liten", "Avbryt");
     b2.type = "button";
     b2.addEventListener("click", e => { e.stopPropagation(); avbrytValg(); });
-    linje.append(tekst, b1, b2);
+    linje.append(tekst, b1);
+    if (valgt.type === "kart") {
+        const r = rom(), f = r.faste[valgt.navn];
+        const her = f && f.id === valgt.id && f.i === valgt.i;
+        const b3 = el("button", "knapp liten", her ? "📌 Fjern fast plass" : (f ? "📌 Flytt fast plass hit" : "📌 Fast plass her"));
+        b3.type = "button";
+        b3.addEventListener("click", e => {
+            e.stopPropagation();
+            const n = valgt.navn, pos = { id: valgt.id, i: valgt.i };
+            if (her) delete r.faste[n];
+            else {
+                for (const x in r.faste) if (r.faste[x].id === pos.id && r.faste[x].i === pos.i) delete r.faste[x];
+                r.faste[n] = pos;
+            }
+            avbrytValg(); lagre(); tegnRegler(); tegnKart();
+            visToast(her ? `${n} har ikke lenger fast plass.` : `${n} sitter alltid her i «${r.navn}».`);
+        });
+        linje.append(b3);
+    }
+    linje.append(b2);
     linje.hidden = false;
 }
 function skjulValg() { $("valgLinje").hidden = true; }
@@ -2611,6 +2888,7 @@ function vekslBord(id) {
         if (kart) kart.plassering[id] = Array(r.seter).fill(null);
     } else {
         if (kart && (kart.plassering[id] || []).some(Boolean)) visToast("Elevene ved bordet er tatt ut av kartet.");
+        for (const n in r.faste) if (r.faste[n].id === id) delete r.faste[n];
         r.skjulte.push(id);
         if (kart) delete kart.plassering[id];
     }
@@ -2777,6 +3055,25 @@ $("oppsettValg2").addEventListener("change", function () {
 });
 $("oppsettMeny").addEventListener("click", e => { if (e.target.closest("button")) $("oppsettMeny").open = false; });
 document.addEventListener("click", e => { const m = $("oppsettMeny"); if (m.open && !m.contains(e.target)) m.open = false; });
+$("unngaGjentak").addEventListener("change", function () { klasse().innstillinger.unngaGjentak = this.checked; lagre(); tegnStatus(); });
+$("rollerPaa").addEventListener("change", function () {
+    const k = klasse();
+    k.grupper.roller.paa = this.checked;
+    if (k.grupper.siste) { if (this.checked) delUtRoller(k); else k.grupper.siste.roller = null; }
+    lagre(); tegnVisningsvalg(); tegnKart();
+});
+async function endreRoller() {
+    const k = klasse();
+    const svar = await spor("Roller i gruppene (skill med komma):", k.grupper.roller.liste.join(", "));
+    if (svar == null) return;
+    const liste = svar.split(",").map(x => x.trim()).filter(Boolean).slice(0, 8);
+    k.grupper.roller.liste = liste.length ? liste : [...STANDARD_ROLLER];
+    if (k.grupper.roller.paa && k.grupper.siste) delUtRoller(k);
+    lagre(); tegnKart();
+}
+function nyeRoller() { const k = klasse(); if (!k.grupper.siste) return; delUtRoller(k); lagre(); tegnKart(); vib(8); visToast("Rollene er delt ut på nytt."); }
+$("btnRollerEndre").addEventListener("click", endreRoller);
+$("btnNyeRoller").addEventListener("click", nyeRoller);
 $("btnRedigerRom").addEventListener("click", () => { redigerRom = !redigerRom; tegnRomfane(); tegnKart(); });
 $("btnNyttOppsett").addEventListener("click", nyttOppsett);
 $("btnGiNavnOppsett").addEventListener("click", async () => {
@@ -2824,6 +3121,15 @@ $("tidStart").addEventListener("click", () => { if (tid.slutt) tidPause(); else 
 $("tidNull").addEventListener("click", tidNullstill);
 $("tidMinus").addEventListener("click", () => tidJuster(-60000));
 $("tidPluss").addEventListener("click", () => tidJuster(60000));
+try { $("tidOppgave").value = localStorage.getItem("klassekart_oppgave") || ""; } catch (e) { /* ikke viktig */ }
+$("tidOppgave").addEventListener("input", function () { try { localStorage.setItem("klassekart_oppgave", this.value); } catch (e) { /* ikke viktig */ } });
+$("tidOppgave").addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+$("tidOppgaver").addEventListener("click", e => {
+    const b = e.target.closest("[data-oppg]");
+    if (!b) return;
+    $("tidOppgave").value = b.dataset.oppg;
+    try { localStorage.setItem("klassekart_oppgave", b.dataset.oppg); } catch (e2) { /* ikke viktig */ }
+});
 $("tidForvalg").addEventListener("click", e => { const b = e.target.closest("[data-sek]"); if (b) tidSett(+b.dataset.sek); });
 oppdaterLydknapp();
 $("btnLyd").addEventListener("click", vekslLyd);
@@ -3194,6 +3500,18 @@ function grupperArk(inn) {
         v => { settMetode(v); byggArk(); tegnMChips(); }), true));
     if (g.metode !== "tilfeldig" && !k.elever.some(x => k.interesse[x])) inn.append(mEl("p", { class: "m-hint" }, "Ingen elever har fått nivå ennå. Sett det på elevkortet under Klasse."));
     if (k.partnere.length + k.adskilt.length) inn.append(mRad("Faste partnere og adskilte", mEl("b", { class: "m-ok" }, "✓ følges alltid")));
+    inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "↺ Unngå samme grupper som sist"), mBryter(k.innstillinger.unngaGjentak, v => { k.innstillinger.unngaGjentak = v; lagre(); tegnStatus(); })));
+    const rl = g.roller;
+    inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "🎭 Roller i gruppene", mEl("small", null, rl.liste.join(" · "))), mBryter(rl.paa, v => {
+        rl.paa = v;
+        if (g.siste) { if (v) delUtRoller(k); else g.siste.roller = null; }
+        lagre(); tegnVisningsvalg(); tegnKart(); byggArk();
+    })));
+    if (rl.paa) {
+        const r2 = mEl("div", { class: "m-tags" }, mKnapp("✏️ Endre roller", "m-leggtil-lenke", async () => { await endreRoller(); byggArk(); }));
+        if (g.siste) r2.append(mKnapp("↻ Nye roller", "m-leggtil-lenke", () => { nyeRoller(); byggArk(); }));
+        inn.append(r2);
+    }
     inn.append(mKnapp("🎲 Lag nye grupper", "m-hoved m-full", () => { vib(10); lukkArk(); genererGrupper(); }));
 }
 
@@ -3205,6 +3523,7 @@ function kartFordelingArk(inn) {
     inn.append(mEl("p", { class: "m-hint" }, "«Bland nivå»: elever som trenger drahjelp, sitter med elever som liker faget. «Like sammen»: elever på samme nivå sitter sammen. Nivå settes på elevkortet under Klasse."));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "Fyll bordene nærmest tavla først"), mBryter(k.innstillinger.fyllFremst, v => { k.innstillinger.fyllFremst = v; lagre(); })));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "Hold adskilte elever unna nabobord", mEl("small", null, "Også bordet ved siden av og foran/bak")), mBryter(k.innstillinger.adskillNaboer, v => { k.innstillinger.adskillNaboer = v; lagre(); tegnStatus(); })));
+    inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "↺ Unngå samme sidemann som sist", mEl("small", null, "Husker de siste gangene")), mBryter(k.innstillinger.unngaGjentak, v => { k.innstillinger.unngaGjentak = v; lagre(); tegnStatus(); })));
     inn.append(mKnapp("🎲 Lag nytt kart", "m-hoved m-full", () => { vib(10); lukkArk(); genererKart(); }));
 }
 
@@ -3281,6 +3600,7 @@ function klasseArk(inn) {
     if (data.aktivKlasse) { h("📋 Kopier klassen", "kopier"); h("✏️ Gi klassen nytt navn", "giNavn"); }
     h("💾 Eksporter backup", "eksporter");
     h("📂 Importer backup", "importer");
+    h("📄 Importer klasseliste (PDF)", "importerPdf");
     if (installerKanVises()) inn.append(mKnapp("📲 Installer som app", "m-handling-rad", () => { lukkArk(); visInstaller(true); }));
     h("❓ Kom i gang", "hjelp");
     h("🔒 Om og personvern", "om");
@@ -3323,11 +3643,13 @@ function tegnMKlasse() {
     const navn = sorter(k.elever);
     liste.append(mEl("div", { class: "m-seksjon" },
         mEl("span", null, `ELEVER · ${navn.length}` + (frav.size ? ` · ${frav.size} BORTE I DAG` : "")),
+        mKnapp("📄 PDF", "", () => handlinger.importerPdf()),
         mKnapp("Lim inn liste", "", () => aapneArk(limInnArk))));
     if (!navn.length) {
         liste.append(mEl("div", { class: "m-tom" }, "Skriv inn ett og ett navn over, eller trykk «Lim inn liste» for å lime inn hele klasselisten på én gang.",
             mEl("br"), mEl("br"), "Har du klassene på PC-en? Ta «Eksporter backup» der, og importer filen her.",
-            mKnapp("📂 Importer backup", "m-hoved m-full", () => handlinger.importer())));
+            mKnapp("📄 Hent navn fra klasseliste (PDF)", "m-hoved m-full", () => handlinger.importerPdf()),
+            mKnapp("📂 Importer backup", "m-handling-rad", () => handlinger.importer())));
         return;
     }
     const ul = mEl("div", { class: "m-liste" });
@@ -3373,6 +3695,17 @@ function elevArk(inn, navn) {
         mEl("h3", null, navn),
         mKnapp("Ferdig", "m-ferdig", () => lukkArk())));
     inn.append(mRad("🤒 Borte i dag", mBryter(borte, v => { settFravaer(navn, v); tegnMKlasse(); byggArk(); })));
+    {   // Fast plass i det aktive oppsettet
+        const r = rom(), f = r.faste[navn];
+        if (f) {
+            const nr = aktiveBord(r).indexOf(f.id) + 1;
+            const side = r.seter === 2 ? (f.i === 0 ? ", venstre plass" : ", høyre plass") : r.seter > 2 ? `, plass ${f.i + 1}` : "";
+            inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📌 Fast plass", mEl("small", null, `Bord ${nr}${side} i «${r.navn}»`)),
+                mKnapp("Fjern", "m-tag", () => { delete r.faste[navn]; lagre(); tegnRegler(); tegnKart(); byggArk(); })));
+        } else {
+            inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📌 Fast plass", mEl("small", null, "Velg eleven i Kart og trykk «📌 Fast plass her»")), mEl("span", { class: "m-pil" }, "–")));
+        }
+    }
     const niva = k.interesse[navn] || "";
     inn.append(mRad("Nivå / interesse", mSeg([["-", "– Drahjelp", "minus"], ["", "· Middels"], ["+", "+ Liker faget", "pluss"]], niva,
         v => { if (v) k.interesse[navn] = v; else delete k.interesse[navn]; lagre(); tegnNivaliste(); byggArk(); tegnStatus(); }), true));
@@ -3436,6 +3769,8 @@ function endreElevNavn(k, gammelt, nytt) {
     for (const r of k.rom) if (r.sisteKart) for (const id in r.sisteKart.plassering) r.sisteKart.plassering[id] = r.sisteKart.plassering[id].map(bytt);
     if (k.grupper.siste) k.grupper.siste.grupper = k.grupper.siste.grupper.map(g => g.map(bytt));
     k.hjul.ute = k.hjul.ute.map(bytt);
+    for (const r of k.rom) if (r.faste && r.faste[gammelt]) { r.faste[nytt] = r.faste[gammelt]; delete r.faste[gammelt]; }
+    if (k.grupper.siste && k.grupper.siste.roller && k.grupper.siste.roller[gammelt]) { k.grupper.siste.roller[nytt] = k.grupper.siste.roller[gammelt]; delete k.grupper.siste.roller[gammelt]; }
     if (hjulSist === gammelt) hjulSist = nytt;
     lagre(); oppdaterAlt();
 }
@@ -3448,6 +3783,7 @@ function fjernElev(k, navn) {
     for (const r of k.rom) if (r.sisteKart) for (const id in r.sisteKart.plassering) r.sisteKart.plassering[id] = r.sisteKart.plassering[id].map(x => x === navn ? null : x);
     if (k.grupper.siste) k.grupper.siste.grupper = k.grupper.siste.grupper.map(g => g.filter(x => x !== navn)).filter(g => g.length);
     k.hjul.ute = k.hjul.ute.filter(x => x !== navn);
+    for (const r of k.rom) if (r.faste) delete r.faste[navn];
     if (hjulSist === navn) hjulSist = null;
     lagre(); oppdaterAlt();
 }
@@ -3610,6 +3946,282 @@ if (window.ResizeObserver) {
 if (mqApp) { if (mqApp.addEventListener) mqApp.addEventListener("change", oppdaterMobilModus); else if (mqApp.addListener) mqApp.addListener(oppdaterMobilModus); }
 oppdaterMobilModus();
 planleggInstaller();
+// ================= Importer klasseliste fra PDF =================
+// PDF-en leses bare her på enheten (med pdf.js som ligger sammen med appen). Ingenting sendes noe sted.
+
+let pdfjsLaster = null;
+function lastPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    if (pdfjsLaster) return pdfjsLaster;
+    pdfjsLaster = new Promise((ok, feil) => {
+        const sc = document.createElement("script");
+        sc.src = "lib/pdfjs/pdf.js";
+        sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdfjs/pdf.worker.js"; ok(); };
+        sc.onerror = () => { pdfjsLaster = null; feil(new Error("pdf.js")); };
+        document.head.append(sc);
+    });
+    return pdfjsLaster;
+}
+
+// Leser teksten i PDF-en som linjer med celler (tekstbiter som står tett sammen)
+async function lesPdfLinjer(buf) {
+    const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+    const linjer = [];
+    for (let sn = 1; sn <= pdf.numPages; sn++) {
+        const side = await pdf.getPage(sn);
+        const tc = await side.getTextContent();
+        const biter = tc.items.filter(i => i.str && i.str.trim())
+            .map(i => ({ x: i.transform[4], y: i.transform[5], b: i.width || 0, s: i.str }));
+        biter.sort((a, b) => b.y - a.y || a.x - b.x);
+        const sideLinjer = [];
+        for (const bit of biter) {
+            let l = sideLinjer.find(l => Math.abs(l.y - bit.y) < 3);
+            if (!l) { l = { y: bit.y, biter: [] }; sideLinjer.push(l); }
+            l.biter.push(bit);
+        }
+        sideLinjer.sort((a, b) => b.y - a.y);
+        for (const l of sideLinjer) {
+            l.biter.sort((a, b) => a.x - b.x);
+            const celler = [];
+            for (const bit of l.biter) {
+                const c = celler[celler.length - 1];
+                const gap = c ? bit.x - (c.x + c.b) : Infinity;
+                if (c && gap < 6) { c.s += (gap > 0.8 && !/\s$/.test(c.s) && !/^\s/.test(bit.s) ? " " : "") + bit.s; c.b = bit.x + bit.b - c.x; }
+                else celler.push({ x: bit.x, b: bit.b, s: bit.s });
+            }
+            celler.forEach(c => { c.s = c.s.replace(/\s+/g, " ").trim(); });
+            linjer.push(celler.filter(c => c.s));
+        }
+    }
+    return linjer;
+}
+
+const PDF_STOPP = new Set(("klasse klasseliste klasser elev elever elevliste elevoversikt navn fornavn etternavn mellomnavn side sider skole skolen " +
+    "kontaktlærer kontaktlærere lærer lærere dato telefon tlf mobil adresse postnr poststed e-post epost gruppe grupper gruppeliste " +
+    "basisgruppe trinn rom fag skoleår utskrift utskrevet totalt antall sum oversikt liste rapport vg1 vg2 vg3 født fødselsdato " +
+    "fødselsnummer kjønn gutt jente gutter jenter foresatt foresatte status aktiv aktive programområde utdanningsprogram periode termin " +
+    "semester visma inschool kl kommentar merknad merknader nr nummer år skolested avdeling fylke kommune videregående " +
+    "mandag tirsdag onsdag torsdag fredag lørdag søndag januar februar mars april mai juni juli august september oktober november desember " +
+    "teknologi industrifag elektro elektrofag datateknologi helse oppvekst studiespesialisering").split(" "));
+
+const tittelStor = t => t.toLowerCase().replace(/(^|[\s\-'’])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+const erNavneord = (t, forste) => /^[\p{L}][\p{L}'’.\-]*,?$/u.test(t) && (/^\p{Lu}/u.test(t) || (!forste && t.length <= 3));
+const erStore = t => t.length > 1 && /^[\p{Lu}'’\-]+,?$/u.test(t);
+
+function tolkNavn(tokens) {
+    tokens = tokens.filter(Boolean);
+    if (!tokens.length || tokens.length > 5) return null;
+    if (tokens.some(t => PDF_STOPP.has(t.toLowerCase().replace(/[,:.]$/, "")))) return null;
+    if (!tokens.every((t, i) => erNavneord(t, i === 0))) return null;
+    const komma = tokens.findIndex(t => t.endsWith(","));
+    let fornavn, etternavn;
+    if (komma > -1 && komma < tokens.length - 1) {            // «Nordmann, Ola»
+        etternavn = tokens.slice(0, komma + 1).join(" ").replace(/,$/, "");
+        fornavn = tokens.slice(komma + 1).join(" ");
+    } else if (erStore(tokens[0]) && tokens.some(t => !erStore(t))) {   // «NORDMANN Ola»
+        const i = tokens.findIndex(t => !erStore(t));
+        etternavn = tittelStor(tokens.slice(0, i).join(" "));
+        fornavn = tokens.slice(i).join(" ");
+    } else if (tokens.length === 1) {
+        fornavn = tokens[0].replace(/,$/, ""); etternavn = "";
+    } else {                                                    // «Ola Nordmann»
+        fornavn = tokens.slice(0, -1).join(" ");
+        etternavn = tokens[tokens.length - 1];
+    }
+    fornavn = fornavn.replace(/,/g, "").trim(); etternavn = etternavn.replace(/,/g, "").trim();
+    if (erStore(fornavn.replace(/\s/g, ""))) fornavn = tittelStor(fornavn);
+    if (erStore(etternavn.replace(/\s/g, ""))) etternavn = tittelStor(etternavn);
+    if (!fornavn || fornavn.length > 30 || etternavn.length > 30) return null;
+    return { fornavn, etternavn };
+}
+
+function finnNavnIPdf(linjer) {
+    const funnet = [];
+    // 1) Tabell med egne kolonner for fornavn og etternavn
+    let kolF = null, kolE = null;
+    for (const celler of linjer) {
+        const f = celler.find(c => /^fornavn/i.test(c.s)), e = celler.find(c => /^etternavn/i.test(c.s));
+        if (f && e) { kolF = f.x; kolE = e.x; continue; }
+        if (kolF == null) continue;
+        const naer = x => celler.reduce((best, c) => (Math.abs(c.x - x) < 45 && (!best || Math.abs(c.x - x) < Math.abs(best.x - x))) ? c : best, null);
+        const cf = naer(kolF), ce = naer(kolE);
+        if (!cf) continue;
+        const n = tolkNavn(cf.s.split(" "));
+        if (!n) continue;
+        const et = ce ? tolkNavn(ce.s.split(" ")) : null;
+        funnet.push({ fornavn: cf.s.replace(/,/g, ""), etternavn: et ? ce.s.replace(/,/g, "") : "" });
+    }
+    if (funnet.length >= 2) return ryddFunnet(funnet);
+
+    // 2) Én navnekolonne / fritekst: les fra starten av hver linje fram til første tall
+    const kandidater = [];
+    for (const celler of linjer) {
+        let tekst = celler.map(c => c.s).join("  ").replace(/^\s*\d{1,3}\s*[.)]?\s+/, "");
+        // Hvis første celle bare er et nummer, hopp over den
+        const tokens = [];
+        for (const t of tekst.split(/\s+/)) {
+            if (/[\d@/\\|:;()]/.test(t)) break;
+            if (tokens.length && PDF_STOPP.has(t.toLowerCase().replace(/[,:.]$/, ""))) break;
+            tokens.push(t);
+            if (tokens.length > 5) break;
+        }
+        // Tabell uten overskrift: «Nordmann  Ola» i hver sin celle – bruk de to første cellene hvis de er navn
+        const n = tolkNavn(tokens);
+        if (n) kandidater.push({ ...n, ord: tokens.length });
+    }
+    const flere = kandidater.filter(k => k.ord >= 2).length;
+    const valgt = flere >= kandidater.length * 0.6 ? kandidater.filter(k => k.ord >= 2) : kandidater;
+    return valgt.length >= 2 ? ryddFunnet(valgt) : [];
+}
+function ryddFunnet(liste) {
+    const sett = new Set(), ut = [];
+    for (const n of liste) {
+        const f = ryddNavn(n.fornavn), e = ryddNavn(n.etternavn || "");
+        const nk = (f + "|" + e).toLowerCase();
+        if (!f || sett.has(nk)) continue;
+        sett.add(nk);
+        ut.push({ fornavn: f, etternavn: e });
+    }
+    return ut;
+}
+function finnKlassenavn(linjer, filnavn) {
+    const tekst = linjer.map(l => l.map(c => c.s).join(" ")).join("\n");
+    let m = tekst.match(/(?:klasse|basisgruppe|klassekode|gruppe)\s*[:\-]?\s*([0-9][0-9A-ZÆØÅa-zæøå\-]{1,9})/i);
+    if (m) return m[1].toUpperCase();
+    m = tekst.match(/\b(\d{1,2}[A-ZÆØÅ]{1,5}\d?[A-ZÆØÅ]?)\b/);
+    if (m) return m[1];
+    return filnavn.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").slice(0, 30) || "Ny klasse";
+}
+function visningsnavn(elever, format, bytt) {
+    const navn = elever.map(e => bytt ? { fornavn: e.etternavn || e.fornavn, etternavn: e.etternavn ? e.fornavn : "" } : e);
+    const lag = (n, f) => f === "full" ? `${n.fornavn} ${n.etternavn}`.trim()
+        : f === "forbokstav" ? (n.etternavn ? `${n.fornavn} ${n.etternavn[0]}.` : n.fornavn) : n.fornavn;
+    let ut = navn.map(n => lag(n, format));
+    // Like navn får forbokstav i etternavnet, og deretter fullt navn
+    for (const neste of ["forbokstav", "full"]) {
+        const teller = {};
+        ut.forEach(x => { teller[x] = (teller[x] || 0) + 1; });
+        ut = ut.map((x, i) => teller[x] > 1 && (format === "fornavn" || (format === "forbokstav" && neste === "full")) ? lag(navn[i], neste) : x);
+    }
+    return ut;
+}
+
+const pdfTilstand = { elever: [], valgt: [], format: "fornavn", bytt: false, maal: "ny", klassenavn: "", filnavn: "" };
+function lukkPdf() { $("pdfVindu").hidden = true; }
+function visPdfMelding(tekst, feil) {
+    const inn = $("pdfInnhold");
+    inn.innerHTML = "";
+    inn.append(el("p", "pdf-melding" + (feil ? " feil" : ""), tekst));
+    if (feil) {
+        const b = el("button", "knapp", "OK"); b.type = "button"; b.addEventListener("click", lukkPdf);
+        const kn = el("div", "dialog-knapper"); kn.append(b); inn.append(kn);
+    }
+    $("pdfVindu").hidden = false;
+}
+async function importerPdfFil(fil) {
+    visPdfMelding("📄 Leser PDF-en …");
+    try { await lastPdfJs(); }
+    catch (e) { visPdfMelding("PDF-leseren kunne ikke lastes. Åpne appen fra nettadressen (med nett første gang), så virker det.", true); return; }
+    let linjer;
+    try { linjer = await lesPdfLinjer(await fil.arrayBuffer()); }
+    catch (e) {
+        visPdfMelding(e && e.name === "PasswordException" ? "PDF-en er passordbeskyttet. Lagre en kopi uten passord og prøv igjen." : "Klarte ikke å lese PDF-en.", true);
+        return;
+    }
+    if (!linjer.length) { visPdfMelding("Fant ingen tekst i PDF-en. Den er trolig skannet som bilde. Kopier heller navnene fra Visma og lim dem inn i navnelisten.", true); return; }
+    const elever = finnNavnIPdf(linjer);
+    if (!elever.length) { visPdfMelding("Fant ingen elevnavn i PDF-en. Kopier navnene fra PDF-en og lim dem inn i navnelisten i stedet.", true); return; }
+    Object.assign(pdfTilstand, { elever, valgt: elever.map(() => true), format: "fornavn", bytt: false, maal: "ny", klassenavn: finnKlassenavn(linjer, fil.name), filnavn: fil.name });
+    tegnPdfForhandsvisning();
+}
+function tegnPdfForhandsvisning() {
+    const t = pdfTilstand, inn = $("pdfInnhold");
+    const visning = visningsnavn(t.elever, t.format, t.bytt);
+    inn.innerHTML = "";
+    inn.append(el("p", "hjelp", `Fant ${t.elever.length} navn i «${t.filnavn}». Kryss av for elevene som skal med. PDF-en leses bare på denne enheten.`));
+    // Navneformat
+    const seg = el("div", "pdf-seg");
+    for (const [v, tekst] of [["fornavn", "Fornavn"], ["forbokstav", "Fornavn + E."], ["full", "Fullt navn"]]) {
+        const b = el("button", v === t.format ? "valgt" : "", tekst); b.type = "button";
+        b.addEventListener("click", () => { t.format = v; tegnPdfForhandsvisning(); });
+        seg.append(b);
+    }
+    const vis = el("div", "pdf-rad"); vis.append(el("span", null, "Vis som"), seg); inn.append(vis);
+    const bytt = el("label", "pdf-bytt");
+    const cb = el("input"); cb.type = "checkbox"; cb.checked = t.bytt;
+    cb.addEventListener("change", () => { t.bytt = cb.checked; tegnPdfForhandsvisning(); });
+    bytt.append(cb, document.createTextNode(" Bytt om fornavn og etternavn"));
+    inn.append(bytt);
+    // Liste
+    const antall = t.valgt.filter(Boolean).length;
+    const topp = el("div", "pdf-listetopp"); topp.append(el("span", null, `${antall} av ${t.elever.length} valgt`));
+    const alle = el("button", "lenke", antall === t.elever.length ? "Fjern alle" : "Velg alle"); alle.type = "button";
+    alle.addEventListener("click", () => { const v = antall !== t.elever.length; t.valgt = t.valgt.map(() => v); tegnPdfForhandsvisning(); });
+    topp.append(alle);
+    inn.append(topp);
+    const liste = el("div", "pdf-liste");
+    t.elever.forEach((e, i) => {
+        const rad = el("label", "pdf-elev" + (t.valgt[i] ? "" : " av"));
+        const c = el("input"); c.type = "checkbox"; c.checked = t.valgt[i];
+        c.addEventListener("change", () => { t.valgt[i] = c.checked; tegnPdfForhandsvisning(); });
+        rad.append(c, el("b", null, visning[i]), el("small", null, [e.fornavn, e.etternavn].filter(Boolean).join(" ")));
+        liste.append(rad);
+    });
+    inn.append(liste);
+    // Hvor skal elevene?
+    const maal = el("div", "pdf-maal");
+    const r1 = el("label"); const i1 = el("input"); i1.type = "radio"; i1.name = "pdfMaal"; i1.checked = t.maal === "ny";
+    i1.addEventListener("change", () => { t.maal = "ny"; tegnPdfForhandsvisning(); });
+    const navnFelt = el("input"); navnFelt.type = "text"; navnFelt.value = t.klassenavn; navnFelt.className = "pdf-klassenavn";
+    navnFelt.addEventListener("input", () => { t.klassenavn = navnFelt.value; });
+    navnFelt.addEventListener("focus", () => { if (t.maal !== "ny") { t.maal = "ny"; i1.checked = true; } });
+    r1.append(i1, document.createTextNode(" Ny klasse: "), navnFelt);
+    maal.append(r1);
+    if (data.aktivKlasse) {
+        const r2 = el("label"); const i2 = el("input"); i2.type = "radio"; i2.name = "pdfMaal"; i2.checked = t.maal === "aktiv";
+        i2.addEventListener("change", () => { t.maal = "aktiv"; });
+        r2.append(i2, document.createTextNode(` Legg til i «${data.aktivKlasse}»`));
+        maal.append(r2);
+    }
+    inn.append(maal);
+    const knapper = el("div", "dialog-knapper");
+    const avbryt = el("button", "knapp", "Avbryt"); avbryt.type = "button"; avbryt.addEventListener("click", lukkPdf);
+    const ok = el("button", "knapp primar", `Importer ${antall} elever`); ok.type = "button"; ok.disabled = !antall;
+    ok.addEventListener("click", () => fullforPdfImport(visning));
+    knapper.append(avbryt, ok);
+    inn.append(knapper);
+    $("pdfVindu").hidden = false;
+}
+function fullforPdfImport(visning) {
+    const t = pdfTilstand;
+    const navn = unike(visning.filter((_, i) => t.valgt[i]).map(ryddNavn).filter(Boolean));
+    if (!navn.length) return;
+    lesElevliste();
+    let klassenavn;
+    if (t.maal === "ny" || !data.aktivKlasse) {
+        klassenavn = (t.klassenavn || "").trim() || "Ny klasse";
+        if (data.klasser[klassenavn]) { let i = 2; while (data.klasser[`${klassenavn} (${i})`]) i++; klassenavn = `${klassenavn} (${i})`; }
+        const k = nyKlasseData();
+        k.elever = navn;
+        data.klasser[klassenavn] = k;
+        const eks = data.klasser["Eksempelklasse"];
+        if (eks && eks.elever.join() === EKSEMPEL_ELEVER.join() && !eks.partnere.length && !eks.adskilt.length) delete data.klasser["Eksempelklasse"];
+    } else {
+        klassenavn = data.aktivKlasse;
+        const k = data.klasser[klassenavn];
+        k.elever.push(...navn.filter(n => !k.elever.includes(n)));
+    }
+    data.aktivKlasse = klassenavn;
+    lukkPdf();
+    lagre(); oppdaterAlt();
+    if (erMobilApp()) visMFane("klasse");
+    visToast(`${navn.length} elever er lagt inn i «${klassenavn}».`);
+}
+$("pdfFil").addEventListener("change", function () { const f = this.files[0]; this.value = ""; if (f) importerPdfFil(f); });
+$("pdfLukk").addEventListener("click", lukkPdf);
+$("btnPdfElever").addEventListener("click", () => handlinger.importerPdf());
+$("pdfVindu").addEventListener("click", e => { if (e.target === $("pdfVindu")) lukkPdf(); });
+
 </script>
 </body>
 </html>

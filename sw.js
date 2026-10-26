@@ -2,7 +2,7 @@
 // Gjør at appen kan installeres og virker uten nett.
 // Henter alltid nyeste versjon når det er nett, og bruker lagret kopi når det ikke er det.
 // Øk versjonsnummeret når filene endres.
-const VERSJON = "klassekart-1.2.5";
+const VERSJON = "klassekart-1.3.0";
 const FILER = [
   "./",
   "./index.html",
