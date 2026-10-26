@@ -858,7 +858,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.5</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.6</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2659,7 +2659,7 @@ function tegnVisningsvalg() {
     if (k.grupper.modus === "antall") { tall.min = 2; tall.max = 15; tall.value = k.grupper.antall; }
     else { tall.min = 2; tall.max = 10; tall.value = k.grupper.storrelse; }
     $("btnRedigerRom").hidden = grupper || hjul;
-    $("bilderVelger").hidden = hjul || !Object.keys(k.bilder || {}).length;
+    $("bilderVelger").hidden = hjul;
     $("visBilder").checked = k.visBilder;
 }
 
@@ -3117,6 +3117,7 @@ $("visBilder").addEventListener("change", function () {
     const k = klasse(); if (!k) return;
     k.visBilder = this.checked;
     lagre(); tegnKart();
+    if (this.checked && !Object.keys(k.bilder || {}).length) visToast("Klassen har ingen bilder ennå. Hent dem fra klasselisten (PDF) under Elever, eller legg dem til på elevkortet på mobil.");
 });
 $("rollerPaa").addEventListener("change", function () {
     const k = klasse();
@@ -3563,7 +3564,7 @@ function grupperArk(inn) {
     if (g.metode !== "tilfeldig" && !k.elever.some(x => k.interesse[x])) inn.append(mEl("p", { class: "m-hint" }, "Ingen elever har fått nivå ennå. Sett det på elevkortet under Klasse."));
     if (k.partnere.length + k.adskilt.length) inn.append(mRad("Faste partnere og adskilte", mEl("b", { class: "m-ok" }, "✓ følges alltid")));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "↺ Unngå samme grupper som sist"), mBryter(k.innstillinger.unngaGjentak, v => { k.innstillinger.unngaGjentak = v; lagre(); tegnStatus(); })));
-    if (Object.keys(k.bilder || {}).length) inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📷 Vis elevbilder", mEl("small", null, "Fint for vikar og utskrift")), mBryter(k.visBilder, v => { k.visBilder = v; lagre(); tegnKart(); })));
+    inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📷 Vis elevbilder", mEl("small", null, Object.keys(k.bilder || {}).length ? "Fint for vikar og utskrift" : "Klassen har ingen bilder ennå – hent dem fra PDF i Klasse-fanen")), mBryter(k.visBilder, v => { k.visBilder = v; lagre(); tegnKart(); })));
     const rl = g.roller;
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "🎭 Roller i gruppene", mEl("small", null, rl.liste.join(" · "))), mBryter(rl.paa, v => {
         rl.paa = v;
@@ -3587,7 +3588,7 @@ function kartFordelingArk(inn) {
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "Fyll bordene nærmest tavla først"), mBryter(k.innstillinger.fyllFremst, v => { k.innstillinger.fyllFremst = v; lagre(); })));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "Hold adskilte elever unna nabobord", mEl("small", null, "Også bordet ved siden av og foran/bak")), mBryter(k.innstillinger.adskillNaboer, v => { k.innstillinger.adskillNaboer = v; lagre(); tegnStatus(); })));
     inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "↺ Unngå samme sidemann som sist", mEl("small", null, "Husker de siste gangene")), mBryter(k.innstillinger.unngaGjentak, v => { k.innstillinger.unngaGjentak = v; lagre(); tegnStatus(); })));
-    if (Object.keys(k.bilder || {}).length) inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📷 Vis elevbilder", mEl("small", null, "Fint for vikar og utskrift")), mBryter(k.visBilder, v => { k.visBilder = v; lagre(); tegnKart(); })));
+    inn.append(mRad(mEl("span", { class: "etikett-tekst" }, "📷 Vis elevbilder", mEl("small", null, Object.keys(k.bilder || {}).length ? "Fint for vikar og utskrift" : "Klassen har ingen bilder ennå – hent dem fra PDF i Klasse-fanen")), mBryter(k.visBilder, v => { k.visBilder = v; lagre(); tegnKart(); })));
     inn.append(mKnapp("🎲 Lag nytt kart", "m-hoved m-full", () => { vib(10); lukkArk(); genererKart(); }));
 }
 
