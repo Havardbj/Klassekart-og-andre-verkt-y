@@ -854,7 +854,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.4</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1430,6 +1430,16 @@ function lesElevliste() {
     hjelp.classList.toggle("varsel", dobbel.length > 0);
     const ny = unike(raa);
     if (ny.join("\n") === k.elever.join("\n")) return;
+    // Er et navn rettet på samme linje? Da følger bilde, regler, nivå osv. med til det nye navnet
+    const borte = k.elever.filter(n => !ny.includes(n)), nye = ny.filter(n => !k.elever.includes(n));
+    if (borte.length && borte.length === nye.length) {
+        for (let i = 0; i < borte.length; i++) {
+            const a = borte[i], b = nye[i];
+            const sammeLinje = k.elever.indexOf(a) === ny.indexOf(b);
+            const likner = borte.length === 1 || a.slice(0, 2).toLowerCase() === b.slice(0, 2).toLowerCase();
+            if (sammeLinje && likner) flyttElevData(k, a, b);
+        }
+    }
     k.elever = ny;
     lagre();
     tegnElevfane(); tegnRegler(); tegnFordeling(); tegnRomfane(); tegnKart();
@@ -3805,8 +3815,13 @@ function velgElevArk(inn, tittel, kandidater, vedValg, tilbake) {
 
 // Bytt navn overalt: elevliste, regler, nivå, fravær, kart, grupper og hjul
 function endreElevNavn(k, gammelt, nytt) {
+    k.elever = k.elever.map(x => x === gammelt ? nytt : x);
+    flyttElevData(k, gammelt, nytt);
+    lagre(); oppdaterAlt();
+}
+// Flytter alt som hører til en elev (regler, nivå, fravær, plasser, bilde …) over til et nytt navn
+function flyttElevData(k, gammelt, nytt) {
     const bytt = x => x === gammelt ? nytt : x;
-    k.elever = k.elever.map(bytt);
     k.partnere = k.partnere.map(p => p.map(bytt));
     k.adskilt = k.adskilt.map(p => p.map(bytt));
     if (gammelt in k.interesse) { k.interesse[nytt] = k.interesse[gammelt]; delete k.interesse[gammelt]; }
@@ -3818,7 +3833,6 @@ function endreElevNavn(k, gammelt, nytt) {
     if (k.grupper.siste && k.grupper.siste.roller && k.grupper.siste.roller[gammelt]) { k.grupper.siste.roller[nytt] = k.grupper.siste.roller[gammelt]; delete k.grupper.siste.roller[gammelt]; }
     if (k.bilder && k.bilder[gammelt]) { k.bilder[nytt] = k.bilder[gammelt]; delete k.bilder[gammelt]; }
     if (hjulSist === gammelt) hjulSist = nytt;
-    lagre(); oppdaterAlt();
 }
 function fjernElev(k, navn) {
     k.elever = k.elever.filter(x => x !== navn);
@@ -4271,7 +4285,7 @@ function finnKlassenavn(linjer, filnavn) {
     if (m) return m[1];
     return filnavn.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").slice(0, 30) || "Ny klasse";
 }
-function visningsnavn(elever, format, bytt) {
+function visningsnavn(elever, format, bytt, mellomnavn) {
     const navn = elever.map(e => {
         if (!bytt || !e.etternavn) return e;
         if (e.vanlig) {   // «Nordmann Ola Martin» → fornavn «Ola Martin», etternavn «Nordmann»
@@ -4280,8 +4294,9 @@ function visningsnavn(elever, format, bytt) {
         }
         return { fornavn: e.etternavn, etternavn: e.fornavn };
     });
-    const lag = (n, f) => f === "full" ? `${n.fornavn} ${n.etternavn}`.trim()
-        : f === "forbokstav" ? (n.etternavn ? `${n.fornavn} ${n.etternavn[0]}.` : n.fornavn) : n.fornavn;
+    const forst = n => mellomnavn ? n.fornavn : n.fornavn.split(" ")[0];
+    const lag = (n, f) => f === "full" ? `${forst(n)} ${n.etternavn}`.trim()
+        : f === "forbokstav" ? (n.etternavn ? `${forst(n)} ${n.etternavn[0]}.` : forst(n)) : forst(n);
     let ut = navn.map(n => lag(n, format));
     // Like navn får forbokstav i etternavnet, og deretter fullt navn
     for (const neste of ["forbokstav", "full"]) {
@@ -4292,7 +4307,7 @@ function visningsnavn(elever, format, bytt) {
     return ut;
 }
 
-const pdfTilstand = { elever: [], valgt: [], format: "fornavn", bytt: false, maal: "ny", klassenavn: "", filnavn: "", medBilder: true };
+const pdfTilstand = { elever: [], valgt: [], format: "fornavn", bytt: false, mellomnavn: false, maal: "ny", klassenavn: "", filnavn: "", medBilder: true };
 function lukkPdf() { $("pdfVindu").hidden = true; }
 
 // Anonym feilrapport: posisjoner og struktur, men alle bokstaver i navn er byttet ut (a/A), tall blir 0
@@ -4364,12 +4379,12 @@ async function importerPdfFil(fil) {
             try { await lagMiniatyrer(sider, elever); } catch (e) { /* uten bilder */ }
         }
     }
-    Object.assign(pdfTilstand, { elever, valgt: elever.map(() => true), format: "fornavn", bytt: false, maal: "ny", klassenavn: finnKlassenavn(linjer, fil.name), filnavn: fil.name, medBilder: true });
+    Object.assign(pdfTilstand, { elever, valgt: elever.map(() => true), format: "fornavn", bytt: false, mellomnavn: false, maal: "ny", klassenavn: finnKlassenavn(linjer, fil.name), filnavn: fil.name, medBilder: true });
     tegnPdfForhandsvisning();
 }
 function tegnPdfForhandsvisning() {
     const t = pdfTilstand, inn = $("pdfInnhold");
-    const visning = visningsnavn(t.elever, t.format, t.bytt);
+    const visning = visningsnavn(t.elever, t.format, t.bytt, t.mellomnavn);
     const antBilder = t.elever.filter(e => e.bilde).length;
     inn.innerHTML = "";
     inn.append(el("p", "hjelp", `Fant ${t.elever.length} navn${antBilder ? ` og ${antBilder} bilder` : ""} i «${t.filnavn}». Kryss av for elevene som skal med. PDF-en leses bare på denne enheten.`));
@@ -4386,6 +4401,13 @@ function tegnPdfForhandsvisning() {
     cb.addEventListener("change", () => { t.bytt = cb.checked; tegnPdfForhandsvisning(); });
     bytt.append(cb, document.createTextNode(" Bytt om fornavn og etternavn"));
     inn.append(bytt);
+    if (t.elever.some(e => e.fornavn.includes(" ") || (t.bytt && e.vanlig))) {
+        const ml = el("label", "pdf-bytt");
+        const cm = el("input"); cm.type = "checkbox"; cm.checked = t.mellomnavn;
+        cm.addEventListener("change", () => { t.mellomnavn = cm.checked; tegnPdfForhandsvisning(); });
+        ml.append(cm, document.createTextNode(" Ta med mellomnavn (Kari Marie i stedet for Kari)"));
+        inn.append(ml);
+    }
     if (antBilder) {
         const mb = el("label", "pdf-bytt");
         const cb2 = el("input"); cb2.type = "checkbox"; cb2.checked = t.medBilder;
