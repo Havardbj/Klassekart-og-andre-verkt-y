@@ -2,7 +2,7 @@
 // Gjør at appen kan installeres og virker uten nett.
 // Henter alltid nyeste versjon når det er nett, og bruker lagret kopi når det ikke er det.
 // Øk versjonsnummeret når filene endres.
-const VERSJON = "klassekart-1.3.6";
+const VERSJON = "klassekart-1.3.7";
 const FILER = [
   "./",
   "./index.html",
@@ -15,7 +15,7 @@ const FILER = [
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSJON).then(c => c.addAll(FILER)));
+  e.waitUntil(caches.open(VERSJON).then(c => c.addAll(FILER.map(f => new Request(f, { cache: "reload" })))));
   self.skipWaiting();
 });
 
@@ -30,8 +30,11 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
+  // Spør alltid serveren om filen er endret (GitHub Pages ber ellers nettleseren bruke gammel kopi i 10 min)
+  const hent = req.mode === "navigate" ? fetch(req.url, { cache: "no-cache", credentials: "same-origin" })
+    : /\/lib\//.test(req.url) ? fetch(req) : fetch(req, { cache: "no-cache" });
   e.respondWith(
-    fetch(req)
+    hent
       .then(svar => {
         if (svar && svar.ok) {
           const kopi = svar.clone();

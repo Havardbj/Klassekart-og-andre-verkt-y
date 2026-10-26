@@ -858,7 +858,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.6</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.7</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -3267,7 +3267,22 @@ document.addEventListener("click", e => {
 
 // Installerbar app / virker uten nett (bare når siden ligger på en nettadresse, ikke som lokal fil)
 if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => { /* appen virker uansett */ }));
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+        .then(reg => {
+            // Se etter ny versjon når appen åpnes igjen eller kommer i forgrunnen
+            document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => { }); });
+        })
+        .catch(() => { /* appen virker uansett */ }));
+    // Ny versjon tatt i bruk: last siden på nytt én gang, så man slipper å gjøre det selv
+    let harKontroller = !!navigator.serviceWorker.controller, lastetPaaNytt = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!harKontroller) { harKontroller = true; return; }
+        if (lastetPaaNytt) return;
+        lastetPaaNytt = true;
+        if (avs || hjulSnurrer || tid.timer) return;   // ikke midt i en avsløring, snurr eller nedtelling
+        try { lesElevliste(); } catch (e) { }
+        location.reload();
+    });
 }
 
 // ---------- Kom i gang / Om og personvern ----------
