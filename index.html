@@ -858,7 +858,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.9</p>
+            <p class="info-versjon">Klassekart · versjon 1.3.10</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -4332,8 +4332,8 @@ function ansiktsUtsnitt(kilde, x, y, w, h) {
         if (hoyre <= v) return fallback();
         const skala = w / B;
         const hodeB = (hoyre - v + 1) * skala, midtX = x + ((v + hoyre + 1) / 2) * skala, toppY = y + topp * skala;
-        let s = klem(hodeB * 1.75, Math.min(w, h) * 0.45, Math.min(w, h));
-        let sx = midtX - s / 2, sy = toppY - s * 0.1;
+        let s = klem(hodeB * 2.3, Math.min(w, h) * 0.6, Math.min(w, h));
+        let sx = midtX - s / 2, sy = toppY - s * 0.13;
         sx = klem(sx, x, x + w - s); sy = klem(sy, y, y + h - s);
         return { sx, sy, s };
     } catch (e) { return fallback(); }
