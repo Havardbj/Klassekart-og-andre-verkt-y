@@ -966,7 +966,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2629,8 +2629,9 @@ function tegnSkive(andel) {
     let d = "";
     if (andel >= 0.9995) d = `M100,${100 - R} A${R},${R} 0 1,1 99.99,${100 - R} Z`;
     else if (andel > 0.0005) {
-        const x = 100 + R * Math.sin(a), y = 100 - R * Math.cos(a);
-        d = `M100,100 L100,${100 - R} A${R},${R} 0 ${a > Math.PI ? 1 : 0},1 ${x.toFixed(2)},${y.toFixed(2)} Z`;
+        // Sektoren ligger mot klokka fra 12, så kanten går med klokka tilbake mot 12 (som en ekte «time timer»)
+        const x = 100 - R * Math.sin(a), y = 100 - R * Math.cos(a);
+        d = `M100,100 L100,${100 - R} A${R},${R} 0 ${a > Math.PI ? 1 : 0},0 ${x.toFixed(2)},${y.toFixed(2)} Z`;
     }
     $("tidSektor").setAttribute("d", d);
 }
