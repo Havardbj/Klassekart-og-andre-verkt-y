@@ -321,7 +321,7 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .hjul-resultat small{display:block;font-size:.4em;font-weight:500;color:var(--muted)}
 .hjul-trukket{color:var(--muted);font-size:.95em;max-width:34em;text-align:center;min-height:1.2em}
 .hjul-tom{font-size:1.3em;color:var(--muted);text-align:center;padding:4em 1em}
-.konfetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:160}
+.konfetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:160}
 @media print{.konfetti{display:none}}
 .tidtaker{position:fixed;right:20px;bottom:20px;z-index:140;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.2);padding:10px 14px 14px;width:300px}
 .tid-hode{position:relative;z-index:2;display:flex;align-items:center;gap:2px;font-weight:700;font-size:14px}
@@ -452,7 +452,7 @@ body.romredigering .verktoy,body.romredigering .status{display:none}
 /* ================= Mobilapp (telefon) ================= */
 .m-appbar,.m-chips,.m-handling,.m-faner{display:none}
 body.mobil .topp,body.mobil .panel,body.mobil .verktoy,body.mobil .status,body.mobil .rom-editor{display:none!important}
-body.mobil{background:#f2f3f6}
+body.mobil{background:#f2f3f6;height:var(--app-h,100dvh);overflow:hidden;overscroll-behavior:none}
 body.mobil .m-appbar{display:flex;align-items:center;gap:8px;padding:max(8px, env(safe-area-inset-top)) 14px 6px;flex:none}
 .m-klassenavn{font-size:21px;font-weight:800;background:none;border:none;display:flex;gap:6px;align-items:center;padding:4px 2px;min-width:0;cursor:pointer;color:var(--ink)}
 .m-klassenavn .tekst{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -560,7 +560,7 @@ body.mobil .toast{bottom:calc(var(--m-bunn, 0px) + 12px)}
 body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,body.tavlemodus .m-faner{display:none!important}
 /* Telefon på tvers: faner som skinne til venstre, knapper til høyre – så kartet får hele høyden */
 @media (orientation: landscape) and (max-height: 500px) {
-    body.mobil:not(.tavlemodus){display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);height:100dvh}
+    body.mobil:not(.tavlemodus){display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);height:var(--app-h,100dvh)}
     body.mobil:not(.tavlemodus) .m-faner{grid-column:1;grid-row:1/3;flex-direction:column;justify-content:center;border-top:none;border-right:1px solid var(--line);padding:4px 2px 4px max(4px, env(safe-area-inset-left));width:64px;box-sizing:border-box}
     body.mobil:not(.tavlemodus) .m-fane{flex:0 1 auto;padding:6px 0;font-size:10px}
     body.mobil:not(.tavlemodus) .m-fane i{font-size:19px}
@@ -901,7 +901,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.5.1</p>
+            <p class="info-versjon">Klassekart · versjon 1.5.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -3482,6 +3482,14 @@ $("btnSlettAlt").addEventListener("click", async () => {
 // Egen app-lignende visning på telefon: fanelinje nederst, store knapper, ark som glir opp nedenfra
 // og elevene som en liste. PC og nettbrett bruker den vanlige visningen.
 
+// Høyden på appen måles direkte: i installert app på Android stemmer ikke alltid 100dvh med skjermen,
+// og da havnet fanelinjen nederst utenfor skjermen.
+function settAppHoyde() { document.documentElement.style.setProperty("--app-h", window.innerHeight + "px"); }
+settAppHoyde();
+window.addEventListener("resize", settAppHoyde);
+window.addEventListener("orientationchange", () => setTimeout(settAppHoyde, 250));
+window.addEventListener("pageshow", settAppHoyde);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") settAppHoyde(); });
 const mqApp = window.matchMedia ? window.matchMedia("(max-width: 700px), (pointer: coarse) and (max-height: 500px)") : null;
 function erMobilApp() { return document.body.classList.contains("mobil"); }
 const MFANER = ["grupper", "hjul", "timer", "kart", "klasse"];
