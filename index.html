@@ -295,6 +295,12 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 @keyframes pop{0%{transform:scale(.7);opacity:.4}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
 .sete.hemmelig{background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35);color:rgba(0,0,0,.4);font-weight:800;font-size:1.15em;cursor:default}
 .sete.avslort{animation:avslort 1.3s ease;position:relative;z-index:3}
+#grupper.stokker .sete{pointer-events:none}
+#grupper.stokker .rolle{visibility:hidden}
+#grupper.stokker .sete.hopp{animation:hopp .16s ease-out}
+@keyframes hopp{0%{transform:translateY(-.25em) scale(.96);opacity:.55}100%{transform:none;opacity:1}}
+#grupper .sete.landet{animation:landet .55s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes landet{0%{transform:scale(.85)}60%{transform:scale(1.08);box-shadow:0 0 0 3px #fcd34d}100%{transform:none}}
 @keyframes avslort{0%{transform:scale(1.45);box-shadow:0 0 0 .45em #fcd34d}70%{box-shadow:0 0 0 .3em rgba(252,211,77,.6)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(252,211,77,0)}}
 @media print{.avslor{display:none!important}}
 .hjulvelger{display:flex;align-items:center;gap:8px}
@@ -895,7 +901,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.4.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.5.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2072,6 +2078,7 @@ function gruppeOppsett(k, n) {
 
 function genererGrupper() {
     const k = klasse(); if (!k) return;
+    stoppStokkStille();
     lesElevliste();
     const frav = new Set(dagensFravaer(k));
     const n = k.elever.filter(x => !frav.has(x)).length;
@@ -2603,8 +2610,61 @@ function snurrHjul() {
 
 let avs = null;   // { rekke, idx, skjult, sist, pause, venter, fart, timer, grupper }
 
+// ---------- Grupper: navnene hopper mellom gruppene og låser seg samtidig ----------
+let stokk = null;   // { t0, varighet, timer, pool }
+function startStokk() {
+    const k = klasse(); if (!k) return;
+    if (stokk) { ferdigStokk(); return; }
+    valgt = null; skjulValg();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    lesElevliste();
+    genererGrupper();
+    const frav = new Set(dagensFravaer(k));
+    const pool = ((k.grupper.siste && k.grupper.siste.grupper) || []).flat().filter(n => !frav.has(n));
+    if (pool.length < 2) { visToast("Det er ingen elever å avsløre."); return; }
+    stokk = { t0: performance.now(), varighet: 7000, timer: null, pool };
+    $("grupper").classList.add("stokker");
+    lyd();
+    stokkSteg();
+}
+function stokkSteg() {
+    if (!stokk) return;
+    const t = (performance.now() - stokk.t0) / stokk.varighet;
+    if (t >= 1) { ferdigStokk(); return; }
+    const k = klasse(), seter = [...document.querySelectorAll("#grupper .sete.elev")];
+    // Hver plass viser et tilfeldig navn – helst forskjellige navn på skjermen samtidig
+    const kø = blande(stokk.pool.slice());
+    seter.forEach((s, i) => {
+        const navn = kø[i % kø.length];
+        const sp = s.querySelector(":scope > span"); if (sp) sp.textContent = navn;
+        const im = s.querySelector(".sete-foto"); if (im) { const b = elevBilde(navn, k); if (b) im.src = b; }
+        s.classList.remove("hopp"); void s.offsetWidth; s.classList.add("hopp");
+    });
+    tikk();
+    // Starter raskt og bremser gradvis opp, som et lykkehjul
+    const forsinkelse = 55 + 520 * Math.pow(t, 2.4);
+    stokk.timer = setTimeout(stokkSteg, forsinkelse);
+}
+function stoppStokkStille() {
+    if (!stokk) return;
+    clearTimeout(stokk.timer); stokk = null;
+    $("grupper").classList.remove("stokker");
+}
+function ferdigStokk() {
+    if (!stokk) return;
+    clearTimeout(stokk.timer);
+    stokk = null;
+    $("grupper").classList.remove("stokker");
+    tegnKart();   // tegner de ekte gruppene
+    document.querySelectorAll("#grupper .sete.elev").forEach((s, i) => { s.style.animationDelay = (i % 7) * 25 + "ms"; s.classList.add("landet"); });
+    vib([25, 40, 25]);
+    fanfare();
+    konfetti($("grupper"));
+}
+
 function startAvsloring() {
     const k = klasse(); if (!k || iHjulmodus()) return;
+    if (iGruppemodus()) { if (avs) stoppAvsloring(); startStokk(); return; }
     valgt = null; skjulValg();
     if (avs) stoppAvsloring();
     if (redigerRom) { redigerRom = false; tegnRomfane(); }
@@ -2750,6 +2810,7 @@ function tegnVisningsvalg() {
 }
 
 function settVisning(v) {
+    stoppStokkStille();
     if (avs) stoppAvsloring();
     valgt = null; skjulValg();
     const k = klasse(); if (!k) return;
@@ -3107,6 +3168,7 @@ document.addEventListener("fullscreenchange", () => {
     else tilpassKart();
 });
 document.addEventListener("keydown", e => {
+    if (stokk && (e.key === "Escape" || e.key === " ")) { e.preventDefault(); ferdigStokk(); return; }
     if (valgt && e.key === "Escape") { avbrytValg(); return; }
     if (avs) {
         if (e.key === "Escape") { e.preventDefault(); stoppAvsloring(); return; }
