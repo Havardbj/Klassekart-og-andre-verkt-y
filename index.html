@@ -893,7 +893,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.4.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.4.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -3989,8 +3989,10 @@ window.addEventListener("beforeinstallprompt", e => {
     installHendelse = e;
     planleggInstaller();
 });
+let installertTid = 0;
 window.addEventListener("appinstalled", () => {
     installHendelse = null;
+    installertTid = Date.now();
     $("installer").hidden = true;
     visToast("Klassekart er installert 🎉 Du finner appen på startskjermen.");
 });
@@ -4018,13 +4020,19 @@ function visInstaller(fraMeny) {
             const skjult = () => { vist = true; };
             window.addEventListener("blur", skjult, { once: true });
             document.addEventListener("visibilitychange", skjult, { once: true });
+            const t0 = Date.now();
             try {
                 await h.prompt();
                 const valg = await h.userChoice;
                 clearTimeout(reserve);
                 if (!vist && mArk) lukkArk();   // vinduet kom likevel – fjern veiledningen
                 vist = true;
-                if (valg && valg.outcome !== "accepted") visToast("Ingen fare – du finner «Installer som app» i klassemenyen senere.");
+                if (valg && valg.outcome === "accepted") {
+                    // Chrome sier ja, men etter en tidligere avinstallering hender det at ingenting skjer
+                    setTimeout(() => { if (!installertTid || installertTid < t0) visAndroidVeiledning(true); }, 12000);
+                } else if (Date.now() - t0 < 900) {
+                    visAndroidVeiledning();          // vinduet lukket seg selv med en gang
+                } else visToast("Ingen fare – du finner «Installer som app» i klassemenyen senere.");
             } catch (e) { clearTimeout(reserve); visAndroidVeiledning(); }
         });
     } else if (erIOSEnhet()) {
@@ -4044,7 +4052,7 @@ function visInstaller(fraMeny) {
     boks.hidden = false;
 }
 // Android uten innebygd installer (Firefox, Samsung Internet, eller når Chrome ikke viser vinduet)
-function visAndroidVeiledning() {
+function visAndroidVeiledning(etterForsok) {
     const menyIkon = '<svg width="6" height="20" viewBox="0 0 6 20" fill="#1d6fb8"><circle cx="3" cy="3" r="2.2"/><circle cx="3" cy="10" r="2.2"/><circle cx="3" cy="17" r="2.2"/></svg>';
     const hamburger = '<svg width="20" height="16" viewBox="0 0 20 16" stroke="#1d6fb8" stroke-width="2.2" stroke-linecap="round"><path d="M2 2h16M2 8h16M2 14h16"/></svg>';
     const plussIkon = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1d6fb8" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="16" height="16" rx="4"/><path d="M10 6v8M6 10h8"/></svg>';
@@ -4063,7 +4071,9 @@ function visAndroidVeiledning() {
         s2 = `<b class="nr">2</b><span class="ios-ikon">${plussIkon}</span><span>Trykk <b>«Installer app»</b> eller <b>«Legg til på startsiden»</b>.</span>`;
     }
     aapneArk(inn => {
-        inn.append(arkHode("Legg til på startskjermen"));
+        inn.append(arkHode(etterForsok ? "Fant du ikke appen?" : "Legg til på startskjermen"));
+        if (etterForsok) inn.append(mEl("p", { class: "m-hint", style: "text-align:left;margin:0 0 10px" },
+            "På mange Android-telefoner havner appen bare i applisten, ikke på startskjermen. Sveip opp fra bunnen, søk etter «Klassekart», hold inne ikonet og dra det til startskjermen."));
         const steg = mEl("div", { class: "ios-steg" });
         const a = mEl("div"); a.innerHTML = s1;
         const b = mEl("div"); b.innerHTML = s2;
@@ -4071,7 +4081,9 @@ function visAndroidVeiledning() {
         steg.append(a, b, c);
         inn.append(mEl("p", { class: "m-hint", style: "text-align:left;margin:0 0 4px" }, `Slik gjør du det i ${nettleser}:`));
         inn.append(steg);
-        inn.append(mEl("p", { class: "m-hint", style: "text-align:left" }, "Ligger Klassekart allerede på startskjermen? Da kan du åpne den derfra."));
+        inn.append(mEl("p", { class: "m-hint", style: "text-align:left" }, "Ligger Klassekart allerede på startskjermen eller i applisten? Da kan du åpne den derfra."));
+        if (!erFirefoxAndroid() && !erSamsung()) inn.append(mEl("p", { class: "m-hint", style: "text-align:left" },
+            "Har du slettet appen før og den ikke kommer tilbake? Chrome husker den gamle en stund. Lukk Chrome helt (sveip den bort fra «nylige apper»), åpne siden igjen og prøv ⋮ → «Installer app» på nytt. Hjelper ikke det: start telefonen på nytt."));
     });
 }
 function visIOSVeiledning() {
