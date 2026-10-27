@@ -239,6 +239,7 @@ body.tavlemodus .hoved{padding:12px;background:#fff}
 body.tavlemodus .kart-ark{box-shadow:none}
 body.tavlemodus .tavle-kontroller{display:flex}
 
+#dialog{z-index:260}
 .dialog-bak{position:fixed;inset:0;background:rgba(17,24,39,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
 .dialog{background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:20px;width:min(420px,100%);display:flex;flex-direction:column;gap:14px}
 .dialog p{margin:0;white-space:pre-line;line-height:1.45;font-size:15px}
@@ -265,6 +266,48 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .pdf-maal label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .pdf-maal .pdf-klassenavn{width:auto!important;flex:1;min-width:120px;padding:6px 9px!important;font-size:14px!important}
 .pdf-knapp{margin-top:8px;width:100%}
+.stat-dialog{width:min(980px,100%);max-height:calc(100dvh - 32px);gap:10px}
+.stat-innhold{overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
+.stat-valg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stat-elevvalg{padding:6px 9px;font-size:14px;border:1px solid var(--line);border-radius:9px}
+.stat-tom{color:var(--muted);font-size:15px;line-height:1.5;padding:12px 0}
+.stat-fliser{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat-flis{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;position:relative;min-height:64px;justify-content:center}
+.stat-flis b{font-size:22px}
+.stat-flis span{font-size:12.5px;color:var(--muted)}
+.stat-flis .stat-ring{position:absolute;right:10px;top:50%;transform:translateY(-50%)}
+.stat-ring{width:52px;height:52px;border-radius:50%;background:conic-gradient(#22c55e calc(var(--p)*1%),#e5e7eb 0);display:grid;place-items:center}
+.stat-ring span{width:40px;height:40px;border-radius:50%;background:#f8fafc;display:grid;place-items:center;font-size:11.5px!important;font-weight:700;color:var(--ink)!important}
+.stat-kolonner{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.stat-kolonner>*{flex:1 1 300px;min-width:0}
+.stat-hoyre{display:flex;flex-direction:column;gap:12px}
+.stat-kort{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.stat-kort h4{margin:0 0 8px;font-size:14px}
+.stat-kort h4:not(:first-child){margin-top:12px}
+.stat-nett{display:grid;gap:2px;align-items:center;font-size:11px;overflow:auto;max-width:100%}
+.stat-kol{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;justify-self:center;max-height:90px;overflow:hidden;text-overflow:ellipsis;color:#475569}
+.stat-rad{text-align:right;padding-right:6px;font-size:11.5px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.stat-celle{width:var(--c);height:var(--c);border-radius:3px;background:#f1f5f9;display:block}
+.stat-celle.null{background:#fde8e8}
+.stat-celle.selv{background:#e2e8f0}
+.stat-linje{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13.5px;padding:3px 0}
+.stat-linje.enkel{grid-template-columns:1fr auto}
+.stat-tekst{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat-barboks{height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.stat-bar{display:block;height:100%;background:#facc15;border-radius:4px}
+.stat-elevtopp{display:flex;gap:12px;align-items:center}
+.stat-elevtopp h3{margin:0;font-size:20px}
+.stat-foto{width:56px;height:64px;border-radius:8px;object-fit:cover;object-position:50% 25%}
+.stat-chips{display:flex;flex-wrap:wrap;gap:5px}
+.stat-chip{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:999px;padding:3px 10px;font-size:13px}
+.stat-chip.null{background:#fff7ed;border-color:#fed7aa}
+.stat-fot{display:flex;justify-content:flex-end}
+.stat-reg summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--accent)}
+.stat-reg{border-top:1px solid var(--line);padding-top:8px}
+.fare-lenke{color:var(--bad)!important;font-size:12.5px}
+.stat-lenke{margin-top:6px;font-size:13px}
+body.mobil .stat-dialog{width:100%;max-height:calc(var(--app-h,100dvh) - 20px);padding:14px}
+body.mobil .stat-fliser{grid-template-columns:1fr}
 .pdf-rapport{font-size:12.5px;align-self:flex-start;color:var(--muted)}
 body.mobil .pdf-dialog{width:100%;max-height:calc(100dvh - 24px)}
 body.mobil .pdf-liste{max-height:none}
@@ -330,6 +373,22 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .tid-visning{font-size:66px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1;margin:2px 0 4px;cursor:default}
 .tid-melding{text-align:center;font-weight:800;color:var(--bad);min-height:0}
 .tid-melding:empty{display:none}
+.tid-skive{display:none;width:150px;height:150px;margin:6px auto 2px}
+.vis-skive .tid-skive,.vis-begge .tid-skive{display:block}
+.vis-skive .tid-visning{display:none}
+.vis-skive .tid-linje,.vis-begge .tid-linje{display:none}
+.vis-begge .tid-visning{font-size:34px;margin-top:0}
+.skive-bunn{fill:#fff;stroke:#d1d5db;stroke-width:2}
+.skive-sektor{fill:#22c55e;transition:fill .3s}
+.tidtaker.snart .skive-sektor{fill:#f59e0b}
+.tidtaker.ferdig .skive-bunn{fill:#fee2e2}
+.strek{stroke:#94a3b8;stroke-width:1}
+.strek.lang{stroke:#334155;stroke-width:2.2}
+.skive-midt{fill:#1f2937}
+.tidtaker.stor .tid-skive{width:min(56vh,42vw);height:min(56vh,42vw)}
+.tidtaker.stor.vis-begge .tid-visning{font-size:min(9vw,12vh)}
+.tidtaker.innebygd .tid-skive{width:min(40vh,70vw);height:min(40vh,70vw)}
+.tidtaker.innebygd.vis-begge .tid-visning{font-size:min(12vw,8vh)}
 .tid-linje{height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden}
 .tid-fyll{height:100%;width:100%;background:var(--accent);transition:width .25s linear}
 .tid-forvalg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}
@@ -577,7 +636,9 @@ body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,b
     /* Timer på tvers: tid og oppgave til venstre, knappene til høyre */
     body.mobil .tidtaker.innebygd{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:18px;align-items:center;align-content:center;height:100%}
     body.mobil .tidtaker.innebygd .tid-hode{position:absolute;right:6px;top:2px}
-    body.mobil .tidtaker.innebygd .tid-oppgave,body.mobil .tidtaker.innebygd .tid-oppgaver,body.mobil .tidtaker.innebygd .tid-visning,body.mobil .tidtaker.innebygd .tid-melding,body.mobil .tidtaker.innebygd .tid-linje{grid-column:1}
+    body.mobil .tidtaker.innebygd .tid-oppgave,body.mobil .tidtaker.innebygd .tid-oppgaver,body.mobil .tidtaker.innebygd .tid-visning,body.mobil .tidtaker.innebygd .tid-melding,body.mobil .tidtaker.innebygd .tid-linje,body.mobil .tidtaker.innebygd .tid-skive{grid-column:1}
+    body.mobil .tidtaker.innebygd .tid-skive{width:min(46vh,30vw);height:min(46vh,30vw);margin:2px auto}
+    body.mobil .tidtaker.innebygd.vis-begge .tid-visning{font-size:min(10vh,40px)}
     body.mobil .tidtaker.innebygd .tid-oppgave{font-size:18px;padding:2px 4px}
     body.mobil .tidtaker.innebygd .tid-oppgaver button{padding:4px 9px;font-size:12px}
     body.mobil .tidtaker.innebygd .tid-visning{font-size:min(22vh,15vw,96px);margin:2px 0 6px}
@@ -644,6 +705,8 @@ body.mobil .sete.ledig{font-size:.8em}
                 <button type="button" data-handling="importer">📂 Importer backup</button>
                 <button type="button" data-handling="importerPdf">📄 Importer klasseliste (PDF)</button>
                 <hr>
+                <button type="button" data-handling="statistikk">📊 Samarbeid og statistikk</button>
+                <hr>
                 <button type="button" data-handling="hjelp">❓ Kom i gang</button>
                 <button type="button" data-handling="om">🔒 Om og personvern</button>
             </div>
@@ -694,6 +757,7 @@ body.mobil .sete.ledig{font-size:.8em}
             <div class="personvern"><span>🙈</span><p class="hjelp">Reglene er uskarpe til du holder musepekeren over dem (eller trykker på dem på mobil), så de ikke vises hvis skjermen er delt med klassen.</p></div>
             <div class="felt">
                 <label class="bryter"><input type="checkbox" id="unngaGjentak"><span>↺ Unngå samme sidemann og gruppe som sist<small>Appen husker de siste gangene og prøver å blande på nytt. Regler og nivå går foran.</small></span></label>
+                <button type="button" class="lenke stat-lenke" id="btnStat2">📊 Se hvem som har samarbeidet (statistikk)</button>
             </div>
             <hr class="skille">
             <div class="felt">
@@ -902,7 +966,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.5.5</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -911,6 +975,7 @@ body.mobil .sete.ledig{font-size:.8em}
     <div class="tid-hode">
         <span>⏱ Tidtaker</span>
         <span class="fyll"></span>
+        <button type="button" id="tidModus" title="Vis tiden som tall, skive eller begge">🕒</button>
         <button type="button" id="tidLyd" title="Lyd av/på">🔊</button>
         <button type="button" id="tidStor" title="Stor visning (for tavla)">⤢</button>
         <button type="button" id="tidSkjul" title="Skjul (tiden går videre)">–</button>
@@ -925,6 +990,12 @@ body.mobil .sete.ledig{font-size:.8em}
         <button type="button" data-oppg="Rydd plassen din">🧹 Rydd</button>
         <button type="button" data-oppg="" title="Fjern teksten">✕</button>
     </div>
+    <svg class="tid-skive" id="tidSkive" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="97" class="skive-bunn"/>
+        <path id="tidSektor" class="skive-sektor" d=""/>
+        <g id="tidStreker"></g>
+        <circle cx="100" cy="100" r="8" class="skive-midt"/>
+    </svg>
     <div class="tid-visning" id="tidVisning">05:00</div>
     <div class="tid-melding" id="tidMelding"></div>
     <div class="tid-linje"><div class="tid-fyll" id="tidFyll"></div></div>
@@ -970,6 +1041,13 @@ body.mobil .sete.ledig{font-size:.8em}
     </div>
 </div>
 <input type="file" id="importFil" hidden>
+<div class="dialog-bak" id="statVindu" hidden>
+    <div class="dialog stat-dialog" role="dialog" aria-modal="true" aria-labelledby="statTittel">
+        <div class="info-hode"><h2 id="statTittel">📊 Samarbeid</h2><button type="button" class="regel-fjern" id="statLukk" title="Lukk">×</button></div>
+        <div class="stat-innhold" id="statInnhold"></div>
+        <div class="stat-fot"><button type="button" class="lenke fare-lenke" id="statNullstill">Slett historikken for klassen</button></div>
+    </div>
+</div>
 <input type="file" id="pdfFil" accept="application/pdf,.pdf" hidden>
 <input type="file" id="bildeFil" accept="image/*" hidden>
 <div class="dialog-bak" id="pdfVindu" hidden>
@@ -1103,6 +1181,9 @@ function nyKlasseData() {
         grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null, roller: { paa: false, liste: [...STANDARD_ROLLER] }, rolleLogg: [] },
         hjul: { fjern: true, dato: idag(), ute: [], modus: "elever", uteGrupper: [], gruppeNokkel: "" },
         bilder: {},
+        hjulLogg: [],
+        fravaerLogg: [],
+        slettetHist: [],
         visBilder: false,
         bildeUtsnitt: 4
     };
@@ -1144,7 +1225,7 @@ function normaliserRom(r) {
         for (const id in sk.plassering) {
             if (Array.isArray(sk.plassering[id])) p[id] = sk.plassering[id].map(x => (x && x !== "Ledig") ? String(x) : null);
         }
-        ut.sisteKart = { dato: String(sk.dato || idag()), plassering: p, merknader: Array.isArray(sk.merknader) ? sk.merknader : [], metode: METODE_NAVN[sk.metode] ? sk.metode : null };
+        ut.sisteKart = { dato: String(sk.dato || idag()), plassering: p, merknader: Array.isArray(sk.merknader) ? sk.merknader : [], metode: METODE_NAVN[sk.metode] ? sk.metode : null, laget: +sk.laget || 0, brukt: !!sk.brukt };
     }
     return ut;
 }
@@ -1170,8 +1251,8 @@ function normaliserKlasse(k) {
     const hist = k.historikk || {};
     for (const t of ["kart", "grupper"]) {
         ut.historikk[t] = (Array.isArray(hist[t]) ? hist[t] : [])
-            .filter(e => e && Array.isArray(e.par)).slice(0, 6)
-            .map(e => ({ dato: String(e.dato || ""), par: e.par.map(String) }));
+            .filter(e => e && Array.isArray(e.par)).slice(0, HIST_MAKS)
+            .map(e => ({ dato: String(e.dato || ""), par: e.par.map(String), id: +e.id || 0 }));
     }
     if (Array.isArray(k.rom) && k.rom.length) ut.rom = k.rom.map(normaliserRom);
     else if (k.rom && typeof k.rom === "object") ut.rom = [normaliserRom(Object.assign({ navn: "Vanlig" }, k.rom))];
@@ -1191,6 +1272,11 @@ function normaliserKlasse(k) {
         if (typeof b === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(b) && b.length < 300000 && ut.elever.includes(navn)) ut.bilder[navn] = b;
     }
     ut.visBilder = k.visBilder === true;
+    ut.hjulLogg = (Array.isArray(k.hjulLogg) ? k.hjulLogg : []).filter(e => e && e.navn).slice(0, 3000)
+        .map(e => ({ dato: String(e.dato || ""), navn: String(e.navn), type: e.type === "gruppe" ? "gruppe" : "elev", medl: Array.isArray(e.medl) ? e.medl.map(String) : undefined }));
+    ut.slettetHist = (Array.isArray(k.slettetHist) ? k.slettetHist : []).map(Number).filter(Boolean).slice(-200);
+    ut.fravaerLogg = (Array.isArray(k.fravaerLogg) ? k.fravaerLogg : []).filter(e => e && Array.isArray(e.navn)).slice(0, HIST_MAKS)
+        .map(e => ({ dato: String(e.dato || ""), navn: e.navn.map(ryddNavn).filter(Boolean) }));
     ut.bildeUtsnitt = parseInt(k.bildeUtsnitt) || 1;
     const g = k.grupper || {};
     ut.grupper.modus = g.modus === "antall" ? "antall" : "storrelse";
@@ -1203,7 +1289,8 @@ function normaliserKlasse(k) {
             grupper: g.siste.grupper.filter(Array.isArray).map(x => x.filter(Boolean).map(String)),
             merknader: Array.isArray(g.siste.merknader) ? g.siste.merknader : [],
             metode: METODE_NAVN[g.siste.metode] ? g.siste.metode : null,
-            roller: g.siste.roller && typeof g.siste.roller === "object" ? Object.assign({}, g.siste.roller) : null
+            roller: g.siste.roller && typeof g.siste.roller === "object" ? Object.assign({}, g.siste.roller) : null,
+            laget: +g.siste.laget || 0, brukt: !!g.siste.brukt
         };
     }
     const rl = g.roller || {};
@@ -1211,7 +1298,7 @@ function normaliserKlasse(k) {
         paa: !!rl.paa,
         liste: Array.isArray(rl.liste) && rl.liste.filter(Boolean).length ? rl.liste.map(String).filter(Boolean).slice(0, 8) : [...STANDARD_ROLLER]
     };
-    ut.grupper.rolleLogg = (Array.isArray(g.rolleLogg) ? g.rolleLogg : []).filter(e => e && e.roller).slice(0, 4);
+    ut.grupper.rolleLogg = (Array.isArray(g.rolleLogg) ? g.rolleLogg : []).filter(e => e && e.roller).slice(0, HIST_MAKS);
     return ut;
 }
 
@@ -1285,6 +1372,7 @@ function gjeldendeKart(r) {
 
 let lagretTimer = null;
 // ---------- Historikk: hvem satt sammen de siste gangene ----------
+const HIST_MAKS = 400;   // omtrent to skoleår med daglige registreringer
 function parAv(sett) {
     const par = [];
     for (const g of sett) {
@@ -1293,30 +1381,60 @@ function parAv(sett) {
     }
     return par;
 }
+// Et kart / en gruppeinndeling telles først når den er tatt i bruk: vist med Avslør, Tavle eller Skriv ut,
+// eller har vært den gjeldende i minst 10 minutter. Utkast man blar forbi, telles aldri.
+const BRUKT_ETTER = 10 * 60 * 1000;
+const erTattIBruk = o => !!o && (o.brukt || !o.laget || Date.now() - o.laget >= BRUKT_ETTER);
 function synkHistorikk(k) {
-    if (!k || !k.historikk) return;
-    const sett = (type, grupper) => {
-        const h = k.historikk[type];
-        const e = { dato: idag(), par: parAv(grupper) };
-        if (h.length && h[0].dato === idag()) h[0] = e; else { h.unshift(e); if (h.length > 6) h.length = 6; }
+    if (!k || !k.historikk) return false;
+    let endret = false;
+    const sett = (type, o, grupper) => {
+        if (!erTattIBruk(o)) return false;
+        const h = k.historikk[type], id = o.laget || 0;
+        const e = { dato: o.dato, par: parAv(grupper), id };
+        let i = id ? h.findIndex(x => x.id === id) : h.findIndex(x => !x.id && x.dato === o.dato);
+        if (i > -1) { if (h[i].par.join() !== e.par.join()) { h[i] = e; endret = true; } return true; }
+        if ((k.slettetHist || []).includes(id)) return false;
+        h.unshift(e); h.sort((a, b) => (b.dato > a.dato) - (b.dato < a.dato) || (b.id || 0) - (a.id || 0));
+        if (h.length > HIST_MAKS) h.length = HIST_MAKS;
+        endret = true;
+        return true;
     };
     const r = k.rom[k.aktivtRom];
-    if (r && r.sisteKart && r.sisteKart.dato === idag()) sett("kart", Object.values(r.sisteKart.plassering));
-    if (k.grupper.siste && k.grupper.siste.dato === idag()) {
-        sett("grupper", k.grupper.siste.grupper);
-        if (k.grupper.siste.roller) {
-            const l = k.grupper.rolleLogg, e = { dato: idag(), roller: k.grupper.siste.roller };
-            if (l.length && l[0].dato === idag()) l[0] = e; else { l.unshift(e); if (l.length > 4) l.length = 4; }
-        }
+    if (r && r.sisteKart) sett("kart", r.sisteKart, Object.values(r.sisteKart.plassering));
+    const gs = k.grupper.siste;
+    if (gs && sett("grupper", gs, gs.grupper) && gs.roller) {
+        const l = k.grupper.rolleLogg, e = { dato: gs.dato, roller: gs.roller, id: gs.laget || 0 };
+        const i = l.findIndex(x => (e.id && x.id === e.id) || (!e.id && x.dato === e.dato));
+        if (i > -1) l[i] = e; else { l.unshift(e); if (l.length > HIST_MAKS) l.length = HIST_MAKS; endret = true; }
     }
+    // Fravær per dag (til statistikken)
+    const fl = k.fravaerLogg, fn = dagensFravaer(k);
+    if (fl.length && fl[0].dato === idag()) { if (fn.length) fl[0].navn = [...fn]; else fl.shift(); }
+    else if (fn.length) { fl.unshift({ dato: idag(), navn: [...fn] }); if (fl.length > HIST_MAKS) fl.length = HIST_MAKS; }
+    return endret;
 }
+// Marker det som vises nå som brukt (Avslør, Tavle, Skriv ut)
+function markerBrukt() {
+    const k = klasse(); if (!k) return;
+    const o = iGruppemodus() ? k.grupper.siste : (rom() || {}).sisteKart;
+    if (o && !o.brukt) { o.brukt = true; lagre(); }
+}
+// Sjekk jevnlig om gjeldende kart/grupper har blitt «tatt i bruk» (10 min)
+setInterval(() => {
+    try {
+        let endret = false;
+        for (const k of Object.values(data.klasser)) if (synkHistorikk(k)) endret = true;
+        if (endret) localStorage.setItem(LAGRING, JSON.stringify(data));
+    } catch (e) { /* ikke kritisk */ }
+}, 60000);
 // Vekter for par som har sittet sammen tidligere dager (nyeste teller mest). Dagens kart regnes ikke med.
 function historikkVekter(k, type) {
     if (!k.innstillinger.unngaGjentak) return null;
     const vekt = [8, 5, 3, 2, 1, 1], m = new Map();
     let i = 0;
     for (const e of k.historikk[type]) {
-        if (e.dato === idag()) continue;
+        if (i >= vekt.length) break;
         const w = vekt[i++] || 0;
         for (const p of e.par) m.set(p, (m.get(p) || 0) + w);
     }
@@ -1327,7 +1445,8 @@ function delUtRoller(k) {
     const s = k.grupper.siste;
     if (!s) return;
     const liste = k.grupper.roller.liste;
-    const forrige = (k.grupper.rolleLogg.find(e => e.dato !== idag()) || {}).roller || {};
+    const naa = k.grupper.siste && k.grupper.siste.laget;
+    const forrige = (k.grupper.rolleLogg.find(e => !naa || e.id !== naa) || {}).roller || {};
     const roller = {};
     for (const g of s.grupper) {
         let beste = null, bp = Infinity;
@@ -1350,8 +1469,11 @@ function gjentakInfo(k, type, sett) {
     if (type === "kart") return like ? `↺ ${like} ${like === 1 ? "par sitter" : "par sitter"} sammen som sist` : "↺ ny sidemann for alle";
     return like ? `↺ ${like} par fra forrige gang` : "↺ ingen par fra forrige gang";
 }
+// Forrige kart/grupper som faktisk ble brukt (ikke det som vises nå)
 function forrigeHistorikk(k, type) {
-    return k.historikk[type].find(e => e.dato !== idag()) || null;
+    const o = type === "kart" ? (rom() || {}).sisteKart : k.grupper.siste;
+    const naa = o && o.laget;
+    return k.historikk[type].find(e => !(naa && e.id === naa) && !(!e.id && o && !naa && e.dato === o.dato)) || null;
 }
 
 function lagre() {
@@ -1475,6 +1597,7 @@ const handlinger = {
     },
     importer() { $("importFil").click(); },
     importerPdf() { $("pdfFil").click(); },
+    statistikk() { visStatistikk(); },
     hjelp() { visInfo("hjelp"); },
     om() { visInfo("om"); }
 };
@@ -2104,7 +2227,7 @@ function genererKart() {
     if (!k.elever.length) { visToast("Legg inn elever først."); velgFane("elever"); return; }
     if (!aktiveBord(r).length) { visToast("Rommet har ingen bord."); redigerRom = true; tegnRomfane(); tegnKart(); return; }
     const { plassering, merknader } = lagKart(k, r, { historikk: historikkVekter(k, "kart"), faste: r.faste });
-    r.sisteKart = { dato: idag(), plassering, merknader, metode: k.innstillinger.metode };
+    r.sisteKart = { dato: idag(), plassering, merknader, metode: k.innstillinger.metode, laget: Date.now(), brukt: false };
     lagre();
     tegnKart();
     const romEl = $("rom");
@@ -2140,7 +2263,7 @@ function genererGrupper() {
     });
     const grupper = Object.keys(plassering).sort((a, b) => a - b)
         .map(id => plassering[id].filter(Boolean)).filter(x => x.length);
-    k.grupper.siste = { dato: idag(), grupper, merknader: merknader.filter(m => !/oppsettet|plasser,/.test(m.tekst)), metode: k.grupper.metode, roller: null };
+    k.grupper.siste = { dato: idag(), grupper, merknader: merknader.filter(m => !/oppsettet|plasser,/.test(m.tekst)), metode: k.grupper.metode, roller: null, laget: Date.now(), brukt: false };
     if (k.grupper.roller.paa) delUtRoller(k);
     lagre();
     tegnKart();
@@ -2476,10 +2599,46 @@ const tidFormat = ms => {
     return String(m).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
 };
 const tidIgjen = () => tid.slutt ? Math.max(0, tid.slutt - Date.now()) : tid.igjen;
+// Analog skive («time timer»): sektoren viser hvor stor del av tiden som er igjen
+const TID_MODI = ["tall", "skive", "begge"];
+let tidModus = "tall";
+try { tidModus = TID_MODI.includes(localStorage.getItem("klassekart_tidvisning")) ? localStorage.getItem("klassekart_tidvisning") : "tall"; } catch (e) { }
+function settTidModus(m) {
+    tidModus = m;
+    const b = $("tidtaker");
+    TID_MODI.forEach(x => b.classList.toggle("vis-" + x, x === m));
+    $("tidModus").textContent = m === "tall" ? "🕒" : m === "skive" ? "🔢" : "🕒🔢";
+    $("tidModus").title = m === "tall" ? "Vis som skive" : m === "skive" ? "Vis skive og tall" : "Vis bare tall";
+    try { localStorage.setItem("klassekart_tidvisning", m); } catch (e) { }
+    visTid();
+}
+(function lagStreker() {
+    const g = $("tidStreker");
+    for (let i = 0; i < 60; i++) {
+        const a = i / 60 * Math.PI * 2, lang = i % 5 === 0;
+        const r1 = lang ? 84 : 90, r2 = 97;
+        const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        l.setAttribute("x1", 100 + r1 * Math.sin(a)); l.setAttribute("y1", 100 - r1 * Math.cos(a));
+        l.setAttribute("x2", 100 + r2 * Math.sin(a)); l.setAttribute("y2", 100 - r2 * Math.cos(a));
+        l.setAttribute("class", lang ? "strek lang" : "strek");
+        g.append(l);
+    }
+})();
+function tegnSkive(andel) {
+    const R = 92, a = Math.max(0, Math.min(1, andel)) * Math.PI * 2;
+    let d = "";
+    if (andel >= 0.9995) d = `M100,${100 - R} A${R},${R} 0 1,1 99.99,${100 - R} Z`;
+    else if (andel > 0.0005) {
+        const x = 100 + R * Math.sin(a), y = 100 - R * Math.cos(a);
+        d = `M100,100 L100,${100 - R} A${R},${R} 0 ${a > Math.PI ? 1 : 0},1 ${x.toFixed(2)},${y.toFixed(2)} Z`;
+    }
+    $("tidSektor").setAttribute("d", d);
+}
 function visTid() {
     const ms = tidIgjen(), boks = $("tidtaker");
     $("tidVisning").textContent = tidFormat(ms);
     $("tidFyll").style.width = (tid.total ? Math.min(100, ms / tid.total * 100) : 0) + "%";
+    if (tidModus !== "tall") tegnSkive(tid.total ? ms / tid.total : 0);
     boks.classList.toggle("snart", ms > 0 && ms <= 30000 && tid.total > 30000);
     $("tidStart").textContent = tid.slutt ? "⏸ Pause" : ms <= 0 ? "▶ På nytt" : ms < tid.total ? "▶ Fortsett" : "▶ Start";
     // Vis gjenværende tid på knappen øverst når tidtakeren er skjult
@@ -2635,6 +2794,12 @@ function snurrHjul() {
         hjulVinkel = ((hjulVinkel % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
         hjulSnurrer = false;
         hjulSist = navn[vinner];
+        {   // logg trekningen til statistikken
+            const gr = iGruppehjul(k) ? hjulGrupper(k).find(x => x.navn === navn[vinner]) : null;
+            k.hjulLogg.unshift(gr ? { dato: idag(), navn: navn[vinner], type: "gruppe", medl: [...gr.medl] } : { dato: idag(), navn: navn[vinner], type: "elev" });
+            if (k.hjulLogg.length > 3000) k.hjulLogg.length = 3000;
+            lagre();
+        }
         vib([25, 40, 25]);
         res.innerHTML = "";
         if (iGruppehjul(k)) {
@@ -2738,6 +2903,7 @@ function ferdigStokk() {
     vib([25, 40, 25]);
     fanfare();
     konfetti($(boks));
+    markerBrukt();
 }
 
 function startAvsloring() {
@@ -3192,6 +3358,7 @@ function roterBord(id) {
 const erTavle = () => document.body.classList.contains("tavlemodus");
 function startTavle() {
     if (redigerRom) { redigerRom = false; tegnRomfane(); tegnKart(); }
+    if (!iHjulmodus()) markerBrukt();
     document.body.classList.add("tavlemodus");
     const d = document.documentElement;
     if (d.requestFullscreen) d.requestFullscreen().catch(() => {});
@@ -3407,6 +3574,8 @@ $("btnTid2").addEventListener("click", vekslTidtaker);
 $("tidSkjul").addEventListener("click", vekslTidtaker);
 $("tidLukk").addEventListener("click", () => { tidNullstill(); $("tidtaker").classList.remove("stor"); $("tidtaker").hidden = true; visTid(); });
 $("tidStor").addEventListener("click", () => $("tidtaker").classList.toggle("stor"));
+$("tidModus").addEventListener("click", () => settTidModus(TID_MODI[(TID_MODI.indexOf(tidModus) + 1) % TID_MODI.length]));
+settTidModus(tidModus);
 $("tidLyd").addEventListener("click", vekslLyd);
 $("tidStart").addEventListener("click", () => { if (tid.slutt) tidPause(); else tidStart(); });
 $("tidNull").addEventListener("click", tidNullstill);
@@ -3488,7 +3657,7 @@ else { try { if (localStorage.getItem("klassekart_meny") === "skjult") settMeny(
 $("btnGenerer2").addEventListener("click", generer);
 $("btnTavle").addEventListener("click", startTavle);
 $("btnAvsluttTavle").addEventListener("click", avsluttTavle);
-$("btnSkriv").addEventListener("click", () => { if (redigerRom) { redigerRom = false; tegnRomfane(); tegnKart(); } window.print(); });
+$("btnSkriv").addEventListener("click", () => { if (redigerRom) { redigerRom = false; tegnRomfane(); tegnKart(); } if (!iHjulmodus()) markerBrukt(); window.print(); });
 
 // På berøringsskjerm finnes ikke «hold musepekeren over» – første trykk viser det uskarpe feltet
 const kanSveve = window.matchMedia ? window.matchMedia("(hover: hover)").matches : true;
@@ -3935,6 +4104,7 @@ function klasseArk(inn) {
     h("📂 Importer backup", "importer");
     h("📄 Importer klasseliste (PDF)", "importerPdf");
     if (installerKanVises()) inn.append(mKnapp("📲 Installer som app", "m-handling-rad", () => { lukkArk(); visInstaller(true); }));
+    inn.append(mKnapp("📊 Samarbeid og statistikk", "m-handling-rad", () => { lukkArk(); visStatistikk(); }));
     h("❓ Kom i gang", "hjelp");
     h("🔒 Om og personvern", "om");
     if (data.aktivKlasse) h("🗑️ Slett klassen", "slett", true);
@@ -4002,6 +4172,8 @@ function tegnMKlasse() {
     liste.append(ul);
     if (frav.size) liste.append(mKnapp("Nullstill fravær i dag", "m-handling-rad", () => { k.fravaer.navn = []; lagre(); tegnElevfane(); tegnKart(); tegnMKlasse(); }));
     liste.append(mEl("p", { class: "m-hint" }, "Trykk på en elev for fravær, nivå, faste partnere og hvem eleven skal holdes unna."));
+    liste.append(mEl("div", { class: "m-liste", style: "margin-top:10px" },
+        mKnapp(["📊", mEl("span", { class: "fyll" }, "Samarbeid og statistikk", mEl("small", { style: "display:block;color:var(--muted);font-size:12.5px" }, "Hvem har jobbet sammen – for klassen og hver elev")), mEl("span", { class: "m-pil" }, "›")], "m-liste-rad", () => visStatistikk())));
     liste.append(mEl("div", { class: "m-seksjon" }, mEl("span", null, "FLYTTE KLASSER MELLOM ENHETER")));
     liste.append(mEl("div", { class: "m-liste" },
         mKnapp(["📂", mEl("span", { class: "fyll" }, "Importer backup", mEl("small", { style: "display:block;color:var(--muted);font-size:12.5px" }, "Hent klasser fra PC eller en annen enhet")), mEl("span", { class: "m-pil" }, "›")], "m-liste-rad", () => handlinger.importer()),
@@ -4110,6 +4282,11 @@ function endreElevNavn(k, gammelt, nytt) {
 // Flytter alt som hører til en elev (regler, nivå, fravær, plasser, bilde …) over til et nytt navn
 function flyttElevData(k, gammelt, nytt) {
     const bytt = x => x === gammelt ? nytt : x;
+    const byttPar = p => { const [a, b] = p.split("|"); return (a === gammelt || b === gammelt) ? parNokkel(bytt(a), bytt(b)) : p; };
+    for (const t of ["kart", "grupper"]) for (const e of (k.historikk && k.historikk[t]) || []) e.par = e.par.map(byttPar);
+    for (const e of k.grupper.rolleLogg || []) if (e.roller && gammelt in e.roller) { e.roller[nytt] = e.roller[gammelt]; delete e.roller[gammelt]; }
+    for (const e of k.hjulLogg || []) { if (e.navn === gammelt) e.navn = nytt; if (e.medl) e.medl = e.medl.map(bytt); }
+    for (const e of k.fravaerLogg || []) e.navn = e.navn.map(bytt);
     k.partnere = k.partnere.map(p => p.map(bytt));
     k.adskilt = k.adskilt.map(p => p.map(bytt));
     if (gammelt in k.interesse) { k.interesse[nytt] = k.interesse[gammelt]; delete k.interesse[gammelt]; }
@@ -4895,6 +5072,229 @@ $("pdfLukk").addEventListener("click", lukkPdf);
 $("btnPdfElever").addEventListener("click", () => handlinger.importerPdf());
 $("btnSlettBilder").addEventListener("click", slettAlleBilder);
 $("pdfVindu").addEventListener("click", e => { if (e.target === $("pdfVindu")) lukkPdf(); });
+
+// ================= Samarbeid og statistikk =================
+const statValg = { type: "alle", periode: "alt", elev: "" };
+function statDatoGrense() {
+    const d = new Date();
+    if (statValg.periode === "4u") d.setDate(d.getDate() - 28);
+    else if (statValg.periode === "semester") { const m = d.getMonth(); if (m >= 7) d.setMonth(7, 1); else d.setMonth(0, 1); }
+    else return "";
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function samarbeidStat(k) {
+    const grense = statDatoGrense();
+    const typer = statValg.type === "alle" ? ["kart", "grupper"] : [statValg.type];
+    const elever = sorter(k.elever), sett = new Set(elever);
+    const teller = new Map(), dager = { kart: 0, grupper: 0 };
+    for (const t of typer) for (const e of k.historikk[t] || []) {
+        if (grense && e.dato < grense) continue;
+        dager[t]++;
+        for (const p of e.par) {
+            const [a, b] = p.split("|");
+            if (sett.has(a) && sett.has(b)) teller.set(p, (teller.get(p) || 0) + 1);
+        }
+    }
+    const partnere = {};
+    elever.forEach(n => { partnere[n] = new Map(); });
+    for (const [p, c] of teller) { const [a, b] = p.split("|"); partnere[a].set(b, c); partnere[b].set(a, c); }
+    const mulige = Math.max(0, elever.length - 1);
+    const dekning = elever.map(n => ({ navn: n, antall: partnere[n].size }));
+    const snitt = elever.length ? dekning.reduce((s, x) => s + x.antall, 0) / elever.length : 0;
+    let aldri = 0;
+    for (let i = 0; i < elever.length; i++) for (let j = i + 1; j < elever.length; j++) if (!teller.has(parNokkel(elever[i], elever[j]))) aldri++;
+    return { elever, teller, partnere, mulige, dekning, snitt, aldri, dager, grense };
+}
+function lukkStat() { $("statVindu").hidden = true; }
+function visStatistikk() {
+    const k = klasse(); if (!k) return;
+    try { synkHistorikk(k); } catch (e) { }
+    if (statValg.elev && !k.elever.includes(statValg.elev)) statValg.elev = "";
+    tegnStatistikk();
+    $("statVindu").hidden = false;
+}
+function tegnStatistikk() {
+    const k = klasse(), inn = $("statInnhold");
+    const st = samarbeidStat(k);
+    $("statTittel").textContent = `📊 Samarbeid i «${data.aktivKlasse}»`;
+    inn.innerHTML = "";
+    // Valg øverst
+    const valgRad = el("div", "stat-valg");
+    const seg = (liste, nokkel) => {
+        const s = el("div", "pdf-seg");
+        for (const [v, t] of liste) {
+            const b = el("button", statValg[nokkel] === v ? "valgt" : "", t); b.type = "button";
+            b.addEventListener("click", () => { statValg[nokkel] = v; tegnStatistikk(); });
+            s.append(b);
+        }
+        return s;
+    };
+    valgRad.append(seg([["alle", "Alt"], ["kart", "🪑 Sidemann"], ["grupper", "👥 Grupper"]], "type"),
+        seg([["4u", "4 uker"], ["semester", "Semester"], ["alt", "Hele tiden"]], "periode"));
+    const velg = el("select", "stat-elevvalg");
+    velg.append(new Option("Hele klassen", ""));
+    st.elever.forEach(n => velg.append(new Option(n, n)));
+    velg.value = statValg.elev;
+    velg.addEventListener("change", () => { statValg.elev = velg.value; tegnStatistikk(); });
+    valgRad.append(velg);
+    inn.append(valgRad);
+
+    const antDager = st.dager.kart + st.dager.grupper;
+    if (!antDager && !statValg.elev) {
+        inn.append(el("p", "stat-tom", "Ingen historikk i denne perioden ennå. Appen registrerer klassekart og grupper som faktisk blir brukt – vist med ✨ Avslør, Tavle eller Skriv ut, eller i bruk i minst 10 minutter. Utkast du blar forbi, telles ikke."));
+        return;
+    }
+    if (statValg.elev) { tegnElevStat(inn, k, st, statValg.elev); return; }
+
+    // Nøkkeltall
+    const prosent = st.mulige ? Math.round(st.snitt / st.mulige * 100) : 0;
+    const flis = (stor, liten, ekstra) => { const f = el("div", "stat-flis"); f.append(el("b", null, stor), el("span", null, liten)); if (ekstra) f.prepend(ekstra); return f; };
+    const ring = el("div", "stat-ring"); ring.style.setProperty("--p", prosent);
+    ring.append(el("span", null, prosent + " %"));
+    const fliser = el("div", "stat-fliser");
+    fliser.append(
+        flis(`${st.snitt.toFixed(1).replace(".", ",")} av ${st.mulige}`, "mulige partnere i snitt per elev", ring),
+        flis(String(antDager), `registrerte dager (${st.dager.kart} kart, ${st.dager.grupper} grupper)`),
+        flis(String(st.aldri), "par som aldri har samarbeidet"));
+    inn.append(fliser);
+
+    const kolonner = el("div", "stat-kolonner");
+    // Rutenett
+    if (st.elever.length <= 40 && !erMobilApp()) {
+        const n = st.elever.length, maks = Math.max(1, ...st.teller.values());
+        const c = klem(Math.floor(440 / Math.max(n, 1)), 11, 22);
+        const nett = el("div", "stat-nett");
+        nett.style.gridTemplateColumns = `auto repeat(${n}, ${c}px)`;
+        nett.style.setProperty("--c", c + "px");
+        nett.append(el("span"));
+        st.elever.forEach(x => nett.append(el("span", "stat-kol", x)));
+        st.elever.forEach(a => {
+            const navnEl = el("button", "stat-rad lenke", a); navnEl.type = "button";
+            navnEl.addEventListener("click", () => { statValg.elev = a; tegnStatistikk(); });
+            nett.append(navnEl);
+            st.elever.forEach(b => {
+                const celle = el("span", "stat-celle");
+                if (a === b) celle.classList.add("selv");
+                else {
+                    const v = st.teller.get(parNokkel(a, b)) || 0;
+                    if (v) { celle.style.background = `rgba(34,197,94,${0.18 + 0.82 * v / maks})`; celle.title = `${a} og ${b}: ${v} ${v === 1 ? "gang" : "ganger"}`; }
+                    else { celle.classList.add("null"); celle.title = `${a} og ${b}: aldri`; }
+                }
+                nett.append(celle);
+            });
+        });
+        const boks = el("div", "stat-kort"); boks.append(el("h4", null, "Hvem har samarbeidet?"), nett, el("p", "hjelp", "Grønnere = oftere sammen. Trykk på et navn for å se eleven."));
+        kolonner.append(boks);
+    }
+    const listeKort = (tittel, rader, tom) => {
+        const kort = el("div", "stat-kort"); kort.append(el("h4", null, tittel));
+        if (!rader.length) kort.append(el("p", "hjelp", tom));
+        const maks = Math.max(1, ...rader.map(r => r[1]));
+        for (const [tekst, v, etikett] of rader) {
+            const r = el("div", "stat-linje");
+            const bar = el("span", "stat-bar"); bar.style.width = Math.max(6, v / maks * 100) + "%";
+            r.append(el("span", "stat-tekst", tekst), el("span", "stat-barboks"), el("b", null, etikett || String(v)));
+            r.children[1].append(bar);
+            kort.append(r);
+        }
+        return kort;
+    };
+    const mest = [...st.teller].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([p, v]) => [p.replace("|", " og "), v]);
+    const faerrest = [...st.dekning].sort((a, b) => a.antall - b.antall || a.navn.localeCompare(b.navn, "no")).slice(0, 7)
+        .map(x => [x.navn, x.antall, `${x.antall} av ${st.mulige}`]);
+    const hoyre = el("div", "stat-hoyre");
+    hoyre.append(listeKort("Samarbeider mest", mest, "Ingen par ennå."), listeKort("Færrest ulike partnere", faerrest, ""));
+    kolonner.append(hoyre);
+    inn.append(kolonner);
+    // Registreringer (kan fjernes hvis noe ble feil)
+    const reg = el("details", "stat-reg");
+    reg.append(el("summary", null, "Hva er registrert?"));
+    reg.append(el("p", "hjelp", "Utkast du blar forbi, telles ikke. Et kart eller en gruppeinndeling telles når du har vist den med ✨ Avslør, Tavle eller Skriv ut, eller når den har vært i bruk i 10 minutter."));
+    const alle = [];
+    for (const t of ["kart", "grupper"]) (k.historikk[t] || []).forEach(e => { if (!st.grense || e.dato >= st.grense) alle.push({ t, e }); });
+    alle.sort((a, b) => (b.e.dato > a.e.dato) - (b.e.dato < a.e.dato) || (b.e.id || 0) - (a.e.id || 0));
+    alle.slice(0, 30).forEach(({ t, e }) => {
+        const l = el("div", "stat-linje enkel");
+        const tid = e.id ? " kl. " + new Date(e.id).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" }) : "";
+        l.append(el("span", "stat-tekst", `${t === "kart" ? "🪑 Kart" : "👥 Grupper"} · ${formaterDato(e.dato)}${tid}`));
+        const x = el("button", "regel-fjern", "×"); x.type = "button"; x.title = "Fjern fra statistikken";
+        x.addEventListener("click", () => {
+            const h = k.historikk[t], i = h.indexOf(e); if (i > -1) h.splice(i, 1);
+            if (e.id) { k.slettetHist.push(e.id); if (t === "grupper") k.grupper.rolleLogg = k.grupper.rolleLogg.filter(r => r.id !== e.id); }
+            lagre(); tegnStatistikk(); const d = $("statInnhold").querySelector(".stat-reg"); if (d) d.open = true;
+        });
+        l.append(x); reg.append(l);
+    });
+    inn.append(reg);
+    inn.append(el("p", "hjelp", "Tallene gjelder elevene som er i klassen nå. Kartet telles for oppsettet som er i bruk."));
+}
+function tegnElevStat(inn, k, st, navn) {
+    const grense = st.grense;
+    const mine = st.partnere[navn];
+    const kort = (tittel) => { const c = el("div", "stat-kort"); c.append(el("h4", null, tittel)); return c; };
+    const topp = el("div", "stat-elevtopp");
+    const foto = elevBilde(navn, k);
+    if (foto) { const im = el("img", "stat-foto"); im.src = foto; im.alt = ""; topp.append(im); }
+    const t = el("div"); t.append(el("h3", null, navn), el("span", "hjelp", `Har samarbeidet med ${mine.size} av ${st.mulige} i klassen`));
+    topp.append(t);
+    inn.append(topp);
+    const kol = el("div", "stat-kolonner");
+    // Partnere
+    const p = kort("Samarbeidet med");
+    const sortert = [...mine].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "no"));
+    if (!sortert.length) p.append(el("p", "hjelp", "Ingen registrert i perioden."));
+    const chips = el("div", "stat-chips");
+    sortert.forEach(([n, c]) => chips.append(el("span", "stat-chip", `${n} · ${c}`)));
+    p.append(chips);
+    const aldri = st.elever.filter(n => n !== navn && !mine.has(n));
+    p.append(el("h4", null, `Ikke samarbeidet ennå (${aldri.length})`));
+    const chips2 = el("div", "stat-chips");
+    aldri.forEach(n => chips2.append(el("span", "stat-chip null", n)));
+    if (!aldri.length) chips2.append(el("span", "hjelp", "Har samarbeidet med alle! 🎉"));
+    p.append(chips2);
+    kol.append(p);
+    // Roller, hjul, fravær
+    const h = el("div", "stat-hoyre");
+    const roller = {};
+    for (const e of k.grupper.rolleLogg || []) { if (grense && e.dato < grense) continue; const r = e.roller && e.roller[navn]; if (r) roller[r] = (roller[r] || 0) + 1; }
+    const rk = kort("🎭 Roller i grupper");
+    const rl = Object.entries(roller).sort((a, b) => b[1] - a[1]);
+    if (!rl.length) rk.append(el("p", "hjelp", "Ingen roller registrert."));
+    rl.forEach(([r, c]) => { const l = el("div", "stat-linje enkel"); l.append(el("span", "stat-tekst", r), el("b", null, c + "×")); rk.append(l); });
+    const hjul = (k.hjulLogg || []).filter(e => !(grense && e.dato < grense));
+    const trukketSelv = hjul.filter(e => e.type === "elev" && e.navn === navn).length;
+    const elevTrekk = hjul.filter(e => e.type === "elev").length;
+    const snittTrekk = k.elever.length ? elevTrekk / k.elever.length : 0;
+    const hk = kort("🎡 Trukket på hjulet");
+    const l1 = el("div", "stat-linje enkel"); l1.append(el("span", "stat-tekst", "Antall ganger"), el("b", null, String(trukketSelv)));
+    const l2 = el("div", "stat-linje enkel"); l2.append(el("span", "stat-tekst", "Snitt i klassen"), el("b", null, snittTrekk.toFixed(1).replace(".", ",")));
+    hk.append(l1, l2);
+    const frav = (k.fravaerLogg || []).filter(e => !(grense && e.dato < grense) && e.navn.includes(navn));
+    const fk = kort("🤒 Registrert borte");
+    const l3 = el("div", "stat-linje enkel"); l3.append(el("span", "stat-tekst", "Dager"), el("b", null, String(frav.length)));
+    fk.append(l3);
+    if (frav.length) fk.append(el("p", "hjelp", "Sist: " + frav.slice(0, 5).map(e => formaterDato(e.dato).replace(/^\w+ /, "")).join(", ")));
+    h.append(rk, hk, fk);
+    kol.append(h);
+    inn.append(kol);
+    const tilbake = el("button", "lenke", "← Hele klassen"); tilbake.type = "button";
+    tilbake.addEventListener("click", () => { statValg.elev = ""; tegnStatistikk(); });
+    inn.append(tilbake);
+}
+async function nullstillStatistikk() {
+    const k = klasse(); if (!k) return;
+    if (!(await bekreft(`Slette all samarbeids- og trekkhistorikk for «${data.aktivKlasse}»?\n\nKlassen, reglene og bildene beholdes.`))) return;
+    k.historikk = { kart: [], grupper: [] };
+    k.grupper.rolleLogg = [];
+    k.hjulLogg = []; k.fravaerLogg = [];
+    lagre(); tegnStatistikk();
+    visToast("Historikken er slettet.");
+}
+$("statLukk").addEventListener("click", lukkStat);
+$("statVindu").addEventListener("click", e => { if (e.target === $("statVindu")) lukkStat(); });
+$("statNullstill").addEventListener("click", nullstillStatistikk);
+$("btnStat2").addEventListener("click", visStatistikk);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("statVindu").hidden) lukkStat(); });
 
 </script>
 </body>
