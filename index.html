@@ -273,9 +273,9 @@ body.mobil .pdf-liste{max-height:none}
 .m-avatar{overflow:hidden}
 .m-avatar img{width:100%;height:100%;object-fit:cover;object-position:50% 25%;display:block}
 .chip-foto{width:20px;height:20px;border-radius:50%;object-fit:cover;object-position:50% 25%;vertical-align:-5px;margin:-2px 6px -2px -6px}
-.hjul-foto{display:block;width:2.8em;height:3.5em;border-radius:.3em;object-fit:cover;object-position:50% 25%;margin:0 auto 4px;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.18)}
-.avslor-bilde{display:block;width:136px;height:170px;border-radius:12px;object-fit:cover;object-position:50% 25%;margin:6px auto 2px;border:3px solid #fcd34d}
-body.mobil .avslor-bilde{width:84px;height:105px}
+.hjul-foto{display:block;width:3.1em;height:3.5em;border-radius:.3em;object-fit:cover;object-position:50% 25%;margin:0 auto 4px;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.avslor-bilde{display:block;width:150px;height:170px;border-radius:12px;object-fit:cover;object-position:50% 25%;margin:6px auto 2px;border:3px solid #fcd34d}
+body.mobil .avslor-bilde{width:92px;height:105px}
 .bilde-linje{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
 .bilde-linje .lenke{font-size:13px}
 .bilde-tips{margin:6px 0 0;font-size:12.5px;color:#7a5200;background:#fff8e1;border:1px solid #f3d27a;border-radius:8px;padding:6px 9px}
@@ -387,7 +387,7 @@ body.romredigering .verktoy,body.romredigering .status{display:none}
 .tidtaker.innebygd .tid-oppgaver button{padding:7px 12px;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.06);border-color:transparent}
 .sete.med-rolle{flex-direction:column;line-height:1.15;gap:.05em;white-space:normal}
 .sete.med-foto{flex-direction:column;gap:.25em;padding:.35em .3em .3em;line-height:1.15}
-.sete-foto{width:4em;height:5em;border-radius:.45em;object-fit:cover;object-position:50% 25%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none;background:#eef2f7}
+.sete-foto{width:4.4em;height:5em;border-radius:.45em;object-fit:cover;object-position:50% 25%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none;background:#eef2f7}
 .sete.fravaer .sete-foto{filter:grayscale(1)}
 .sete .rolle{font-size:.72em;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#1f2937;color:#fff;padding:10px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
@@ -672,7 +672,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <p class="hjelp" id="elevHjelp">Ett navn per linje. Endringer lagres automatisk.</p>
                 <button type="button" class="knapp pdf-knapp" id="btnPdfElever">📄 Hent navn og bilder fra klasseliste (PDF)</button>
                 <div class="bilde-linje" id="bildeLinje" hidden><span id="bildeAntall"></span><button type="button" class="lenke" id="btnSlettBilder">Slett alle bilder</button></div>
-                <p class="bilde-tips" id="bildeTips" hidden>💡 Bildene er for tett zoomet inn. Hent PDF-en på nytt, så blir de større og viser hele hodet.</p>
+                <p class="bilde-tips" id="bildeTips" hidden>💡 Hent PDF-en på nytt for å få med mer av bildene (mindre zoom).</p>
             </div>
             <hr class="skille">
             <div class="felt">
@@ -895,7 +895,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.4.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.4.3</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1097,7 +1097,7 @@ function nyKlasseData() {
         hjul: { fjern: true, dato: idag(), ute: [], modus: "elever", uteGrupper: [], gruppeNokkel: "" },
         bilder: {},
         visBilder: false,
-        bildeUtsnitt: 3
+        bildeUtsnitt: 4
     };
 }
 function lesPar(liste) {
@@ -1515,7 +1515,7 @@ function tegnElevfane() {
     const nb = Object.keys(k.bilder || {}).length;
     $("bildeLinje").hidden = !nb;
     $("bildeAntall").textContent = `📷 ${nb} ${nb === 1 ? "elev har" : "elever har"} bilde`;
-    $("bildeTips").hidden = !(nb && k.bildeUtsnitt === 2);
+    $("bildeTips").hidden = !(nb && (k.bildeUtsnitt === 2 || k.bildeUtsnitt === 3));
 }
 
 function settFravaer(navn, borte) {
@@ -3833,8 +3833,8 @@ function tegnMKlasse() {
             mKnapp("📂 Importer backup", "m-handling-rad", () => handlinger.importer())));
         return;
     }
-    if (Object.keys(k.bilder || {}).length && k.bildeUtsnitt === 2)
-        liste.append(mKnapp("💡 Bildene er for tett zoomet inn. Trykk her og hent PDF-en på nytt.", "m-handling-rad", () => handlinger.importerPdf()));
+    if (Object.keys(k.bilder || {}).length && (k.bildeUtsnitt === 2 || k.bildeUtsnitt === 3))
+        liste.append(mKnapp("💡 Trykk her og hent PDF-en på nytt for å få med mer av bildene.", "m-handling-rad", () => handlinger.importerPdf()));
     const ul = mEl("div", { class: "m-liste" });
     for (const n of navn) {
         ul.append(mKnapp([mAvatar(n),
@@ -4410,7 +4410,7 @@ async function lagMiniatyrer(sider, elever) {
 }
 // Lager et portrettutsnitt (4:5) som tar med hele hodet og skuldrene. Finner hodet mot ensfarget bakgrunn
 // for å sentrere det; zoomer bare inn når hodet er svært lite i bildet.
-const BILDE_B = 200, BILDE_H = 250, BILDE_FORHOLD = BILDE_B / BILDE_H;
+const BILDE_B = 210, BILDE_H = 240, BILDE_FORHOLD = BILDE_B / BILDE_H;
 function ansiktsUtsnitt(kilde, x, y, w, h) {
     let sh = Math.min(h, w / BILDE_FORHOLD), sw = sh * BILDE_FORHOLD;
     const fallback = () => ({ sx: x + (w - sw) / 2, sy: y + (h - sh) * 0.3, sw, sh });
@@ -4438,8 +4438,8 @@ function ansiktsUtsnitt(kilde, x, y, w, h) {
         if (hoyre <= v) return fallback();
         const skala = w / B;
         const hodeB = (hoyre - v + 1) * skala, midtX = x + ((v + hoyre + 1) / 2) * skala, toppY = y + topp * skala;
-        // Bare zoom inn hvis hodet er under omtrent en tredel av bredden
-        if (hodeB * 3.2 < sw) { sw = Math.max(hodeB * 3.2, sw * 0.7); sh = sw / BILDE_FORHOLD; }
+        // Bare zoom inn hvis hodet er svært lite (under en femdel av bredden)
+        if (hodeB * 5 < sw) { sw = Math.max(hodeB * 5, sw * 0.8); sh = sw / BILDE_FORHOLD; }
         let sx = klem(midtX - sw / 2, x, x + w - sw);
         let sy = sh < h - 1 ? klem(toppY - sh * 0.1, y, y + h - sh) : y;
         return { sx, sy, sw, sh };
@@ -4667,7 +4667,7 @@ function fullforPdfImport(visning) {
     }
     let antBilder = 0;
     if (t.medBilder) for (const v of valgte) if (v.bilde) { k.bilder[v.navn] = v.bilde; antBilder++; }
-    if (antBilder) k.bildeUtsnitt = 3;
+    if (antBilder) k.bildeUtsnitt = 4;
     data.aktivKlasse = klassenavn;
     lukkPdf();
     lagre(); oppdaterAlt();
@@ -4680,14 +4680,14 @@ function fullforPdfImport(visning) {
 async function forbedreGamleBilder() {
     let endret = false;
     for (const k of Object.values(data.klasser)) {
-        if ((k.bildeUtsnitt || 1) !== 1) continue;
+        if ((k.bildeUtsnitt || 1) !== 1) continue;   // bare de aller første (hele bildet lagret)
         for (const navn of Object.keys(k.bilder || {})) {
             try {
                 const img = new Image(); img.src = k.bilder[navn]; await img.decode();
                 k.bilder[navn] = tilMiniatyr(img, ansiktsUtsnitt(img, 0, 0, img.naturalWidth, img.naturalHeight));
             } catch (e) { /* behold bildet som det er */ }
         }
-        k.bildeUtsnitt = 3; endret = true;
+        k.bildeUtsnitt = 4; endret = true;
     }
     if (endret) { lagre(); oppdaterAlt(); }
 }
