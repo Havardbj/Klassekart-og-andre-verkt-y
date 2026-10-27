@@ -295,11 +295,11 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 @keyframes pop{0%{transform:scale(.7);opacity:.4}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
 .sete.hemmelig{background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35);color:rgba(0,0,0,.4);font-weight:800;font-size:1.15em;cursor:default}
 .sete.avslort{animation:avslort 1.3s ease;position:relative;z-index:3}
-#grupper.stokker .sete{pointer-events:none}
-#grupper.stokker .rolle{visibility:hidden}
-#grupper.stokker .sete.hopp{animation:hopp .16s ease-out}
+.stokker .sete{pointer-events:none}
+.stokker .rolle{visibility:hidden}
+.stokker .sete.hopp{animation:hopp .16s ease-out}
 @keyframes hopp{0%{transform:translateY(-.25em) scale(.96);opacity:.55}100%{transform:none;opacity:1}}
-#grupper .sete.landet{animation:landet .55s cubic-bezier(.3,1.6,.5,1) both}
+#grupper .sete.landet,#rom .sete.landet{animation:landet .55s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes landet{0%{transform:scale(.85)}60%{transform:scale(1.08);box-shadow:0 0 0 3px #fcd34d}100%{transform:none}}
 @keyframes avslort{0%{transform:scale(1.45);box-shadow:0 0 0 .45em #fcd34d}70%{box-shadow:0 0 0 .3em rgba(252,211,77,.6)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(252,211,77,0)}}
 @media print{.avslor{display:none!important}}
@@ -901,7 +901,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.5.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.5.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2049,6 +2049,7 @@ function lagKart(k, r, valg = {}) {
 
 function genererKart() {
     const k = klasse(); if (!k) return;
+    stoppStokkStille();
     lesElevliste();
     const r = rom();
     if (redigerRom) { redigerRom = false; tegnRomfane(); }
@@ -2610,20 +2611,26 @@ function snurrHjul() {
 
 let avs = null;   // { rekke, idx, skjult, sist, pause, venter, fart, timer, grupper }
 
-// ---------- Grupper: navnene hopper mellom gruppene og låser seg samtidig ----------
-let stokk = null;   // { t0, varighet, timer, pool }
+// ---------- Avsløring: navnene hopper mellom plassene / gruppene og låser seg samtidig ----------
+let stokk = null;   // { t0, varighet, timer, pool, boks }
 function startStokk() {
     const k = klasse(); if (!k) return;
     if (stokk) { ferdigStokk(); return; }
     valgt = null; skjulValg();
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     lesElevliste();
-    genererGrupper();
+    if (redigerRom) { redigerRom = false; tegnRomfane(); }
+    const grupper = iGruppemodus();
+    if (grupper) genererGrupper(); else genererKart();
     const frav = new Set(dagensFravaer(k));
-    const pool = ((k.grupper.siste && k.grupper.siste.grupper) || []).flat().filter(n => !frav.has(n));
+    let pool;
+    if (grupper) pool = ((k.grupper.siste && k.grupper.siste.grupper) || []).flat();
+    else { const kart = gjeldendeKart(rom()); pool = kart ? Object.values(kart.plassering).flat().filter(Boolean) : []; }
+    pool = pool.filter(n => !frav.has(n));
     if (pool.length < 2) { visToast("Det er ingen elever å avsløre."); return; }
-    stokk = { t0: performance.now(), varighet: 7000, timer: null, pool };
-    $("grupper").classList.add("stokker");
+    const boks = grupper ? "grupper" : "rom";
+    stokk = { t0: performance.now(), varighet: 7000, timer: null, pool, boks };
+    $(boks).classList.add("stokker");
     lyd();
     stokkSteg();
 }
@@ -2631,7 +2638,7 @@ function stokkSteg() {
     if (!stokk) return;
     const t = (performance.now() - stokk.t0) / stokk.varighet;
     if (t >= 1) { ferdigStokk(); return; }
-    const k = klasse(), seter = [...document.querySelectorAll("#grupper .sete.elev")];
+    const k = klasse(), seter = [...document.querySelectorAll(`#${stokk.boks} .sete.elev:not(.fravaer)`)];
     // Hver plass viser et tilfeldig navn – helst forskjellige navn på skjermen samtidig
     const kø = blande(stokk.pool.slice());
     seter.forEach((s, i) => {
@@ -2647,24 +2654,27 @@ function stokkSteg() {
 }
 function stoppStokkStille() {
     if (!stokk) return;
-    clearTimeout(stokk.timer); stokk = null;
-    $("grupper").classList.remove("stokker");
+    clearTimeout(stokk.timer);
+    $(stokk.boks).classList.remove("stokker");
+    stokk = null;
 }
 function ferdigStokk() {
     if (!stokk) return;
     clearTimeout(stokk.timer);
+    const boks = stokk.boks;
     stokk = null;
-    $("grupper").classList.remove("stokker");
-    tegnKart();   // tegner de ekte gruppene
-    document.querySelectorAll("#grupper .sete.elev").forEach((s, i) => { s.style.animationDelay = (i % 7) * 25 + "ms"; s.classList.add("landet"); });
+    $(boks).classList.remove("stokker");
+    tegnKart();   // tegner de ekte plassene / gruppene
+    document.querySelectorAll(`#${boks} .sete.elev`).forEach((s, i) => { s.style.animationDelay = (i % 7) * 25 + "ms"; s.classList.add("landet"); });
     vib([25, 40, 25]);
     fanfare();
-    konfetti($("grupper"));
+    konfetti($(boks));
 }
 
 function startAvsloring() {
     const k = klasse(); if (!k || iHjulmodus()) return;
-    if (iGruppemodus()) { if (avs) stoppAvsloring(); startStokk(); return; }
+    if (avs) stoppAvsloring();
+    startStokk(); return;
     valgt = null; skjulValg();
     if (avs) stoppAvsloring();
     if (redigerRom) { redigerRom = false; tegnRomfane(); }
