@@ -373,7 +373,16 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .tid-visning{font-size:66px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1;margin:2px 0 4px;cursor:default}
 .tid-melding{text-align:center;font-weight:800;color:var(--bad);min-height:0}
 .tid-melding:empty{display:none}
-.tid-skive{display:none;width:150px;height:150px;margin:6px auto 2px}
+.tid-skive,#tidModus,.tid-oppgave,.tid-oppgaver,.tid-linje{display:none!important}
+.tid-ramme{position:relative;width:fit-content;margin:6px auto 10px;padding:6px 20px 8px}
+.tid-ramme .tid-visning{margin:0;position:relative}
+.tid-ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.ring-bunn{fill:none;stroke:#e5e7eb;stroke-width:var(--sw,8px)}
+.ring-fyll{fill:none;stroke:url(#tidGrad);stroke-width:var(--sw,8px);stroke-linecap:round;transition:stroke-dasharray .25s linear,stroke-dashoffset .25s linear}
+.tidtaker.snart .ring-fyll{stroke:#f59e0b}
+.tidtaker.ferdig .ring-bunn{stroke:#fecaca}
+.tidtaker.stor .tid-ramme{padding:1.5vh 3vw 2vh}
+.tidtaker.innebygd .tid-ramme{padding:10px 26px 14px;margin:8px auto 18px}
 .vis-skive .tid-skive,.vis-begge .tid-skive{display:block}
 .vis-skive .tid-visning{display:none}
 .vis-skive .tid-linje,.vis-begge .tid-linje{display:none}
@@ -391,9 +400,10 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .tidtaker.innebygd.vis-begge .tid-visning{font-size:min(12vw,8vh)}
 .tid-linje{height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden}
 .tid-fyll{height:100%;width:100%;background:var(--accent);transition:width .25s linear}
-.tid-forvalg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}
+.tid-forvalg{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:10px}
+.tid-forvalg .minus{color:#64748b}
 .tid-forvalg .knapp,.tid-styring .knapp{justify-content:center;padding-left:4px;padding-right:4px}
-.tid-styring{display:grid;grid-template-columns:1fr 1.4fr 1fr auto;gap:5px;margin-top:6px}
+.tid-styring{display:grid;grid-template-columns:1fr auto;gap:5px;margin-top:6px}
 .tidtaker.snart .tid-visning{color:#b45309}
 .tidtaker.snart .tid-fyll{background:#f59e0b}
 .tidtaker.ferdig .tid-visning{color:var(--bad);animation:blink 1s steps(2,start) infinite}
@@ -403,7 +413,7 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .tidtaker.stor .tid-visning{font-size:min(24vw,40vh,320px);line-height:1;margin:.04em 0 .06em}
 .tidtaker.stor .tid-melding{font-size:min(6vw,48px)}
 .tidtaker.stor .tid-linje{height:14px;border-radius:7px}
-.tidtaker.stor .tid-forvalg{grid-template-columns:repeat(8,1fr)}
+.tidtaker.stor .tid-forvalg{grid-template-columns:repeat(6,1fr)}
 .tidtaker.stor .tid-hode{font-size:16px}
 @media print{.tidtaker{display:none!important}}
 .knapp.tid-aktiv{background:var(--accent-soft);border-color:#b9d3ee;color:var(--accent);font-variant-numeric:tabular-nums;font-weight:700}
@@ -636,7 +646,7 @@ body.tavlemodus .m-appbar,body.tavlemodus .m-chips,body.tavlemodus .m-handling,b
     /* Timer på tvers: tid og oppgave til venstre, knappene til høyre */
     body.mobil .tidtaker.innebygd{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:18px;align-items:center;align-content:center;height:100%}
     body.mobil .tidtaker.innebygd .tid-hode{position:absolute;right:6px;top:2px}
-    body.mobil .tidtaker.innebygd .tid-oppgave,body.mobil .tidtaker.innebygd .tid-oppgaver,body.mobil .tidtaker.innebygd .tid-visning,body.mobil .tidtaker.innebygd .tid-melding,body.mobil .tidtaker.innebygd .tid-linje,body.mobil .tidtaker.innebygd .tid-skive{grid-column:1}
+    body.mobil .tidtaker.innebygd .tid-oppgave,body.mobil .tidtaker.innebygd .tid-oppgaver,body.mobil .tidtaker.innebygd .tid-visning,body.mobil .tidtaker.innebygd .tid-melding,body.mobil .tidtaker.innebygd .tid-linje,body.mobil .tidtaker.innebygd .tid-skive,body.mobil .tidtaker.innebygd .tid-ramme{grid-column:1}
     body.mobil .tidtaker.innebygd .tid-skive{width:min(46vh,30vw);height:min(46vh,30vw);margin:2px auto}
     body.mobil .tidtaker.innebygd.vis-begge .tid-visning{font-size:min(10vh,40px)}
     body.mobil .tidtaker.innebygd .tid-oppgave{font-size:18px;padding:2px 4px}
@@ -966,7 +976,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.1</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -996,23 +1006,28 @@ body.mobil .sete.ledig{font-size:.8em}
         <g id="tidStreker"></g>
         <circle cx="100" cy="100" r="8" class="skive-midt"/>
     </svg>
-    <div class="tid-visning" id="tidVisning">05:00</div>
+    <div class="tid-ramme" id="tidRamme">
+        <svg class="tid-ring" id="tidRing" aria-hidden="true">
+            <defs><linearGradient id="tidGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#22c55e"/><stop offset=".5" stop-color="#06b6d4"/><stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient></defs>
+            <path class="ring-bunn" id="tidRingBunn"/>
+            <path class="ring-fyll" id="tidRingFyll" pathLength="1000"/>
+        </svg>
+        <div class="tid-visning" id="tidVisning">05:00</div>
+    </div>
     <div class="tid-melding" id="tidMelding"></div>
     <div class="tid-linje"><div class="tid-fyll" id="tidFyll"></div></div>
     <div class="tid-forvalg" id="tidForvalg">
-        <button type="button" class="knapp liten" data-sek="30">30 s</button>
-        <button type="button" class="knapp liten" data-sek="60">1 min</button>
-        <button type="button" class="knapp liten" data-sek="120">2 min</button>
-        <button type="button" class="knapp liten" data-sek="180">3 min</button>
-        <button type="button" class="knapp liten" data-sek="300">5 min</button>
-        <button type="button" class="knapp liten" data-sek="600">10 min</button>
-        <button type="button" class="knapp liten" data-sek="900">15 min</button>
-        <button type="button" class="knapp liten" data-sek="1200">20 min</button>
+        <button type="button" class="knapp liten minus" data-min="-10">−10</button>
+        <button type="button" class="knapp liten minus" data-min="-5">−5</button>
+        <button type="button" class="knapp liten minus" data-min="-1">−1</button>
+        <button type="button" class="knapp liten" data-min="1">+1</button>
+        <button type="button" class="knapp liten" data-min="5">+5</button>
+        <button type="button" class="knapp liten" data-min="10">+10</button>
     </div>
     <div class="tid-styring">
-        <button type="button" class="knapp liten" id="tidMinus" title="Ett minutt mindre">− 1 min</button>
         <button type="button" class="knapp primar" id="tidStart">▶ Start</button>
-        <button type="button" class="knapp liten" id="tidPluss" title="Ett minutt mer">+ 1 min</button>
         <button type="button" class="knapp liten" id="tidNull" title="Tilbake til start">↺</button>
     </div>
 </div>
@@ -2624,6 +2639,30 @@ function settTidModus(m) {
         g.append(l);
     }
 })();
+// Ramme rundt tallene som krymper med klokka mot toppen etter hvert som tiden går
+let ringStr = "";
+function lagRingSti() {
+    const r = $("tidRamme"); if (!r || !r.offsetWidth) return false;
+    const w = r.offsetWidth, h = r.offsetHeight, sw = Math.max(6, Math.min(16, h * 0.09)), i = sw / 2;
+    const R = Math.min(h / 2 - i, Math.max(10, h * 0.28)), x0 = i, y0 = i, x1 = w - i, y1 = h - i, mx = w / 2;
+    const d = `M${mx},${y0} H${x1 - R} A${R},${R} 0 0 1 ${x1},${y0 + R} V${y1 - R} A${R},${R} 0 0 1 ${x1 - R},${y1} H${x0 + R} A${R},${R} 0 0 1 ${x0},${y1 - R} V${y0 + R} A${R},${R} 0 0 1 ${x0 + R},${y0} Z`;
+    const svg = $("tidRing"); svg.setAttribute("viewBox", `0 0 ${w} ${h}`); svg.style.setProperty("--sw", sw + "px");
+    $("tidRingBunn").setAttribute("d", d); $("tidRingFyll").setAttribute("d", d);
+    ringStr = w + "x" + h;
+    return true;
+}
+function tegnRing(andel) {
+    const r = $("tidRamme");
+    if (!r || !r.offsetWidth) return;
+    if (ringStr !== r.offsetWidth + "x" + r.offsetHeight) lagRingSti();
+    const a = Math.max(0, Math.min(1, andel)) * 1000;
+    // Synlig del ligger fra (1 − andel) til slutten, som er toppen – så kanten vandrer med klokka mot toppen
+    const f = $("tidRingFyll");
+    f.style.strokeDasharray = `${a} 1000`;
+    f.style.strokeDashoffset = String(-(1000 - a));
+    f.style.opacity = a > 0.5 ? 1 : 0;
+}
+if (window.ResizeObserver) new ResizeObserver(() => { ringStr = ""; tegnRing(tid.total ? tidIgjen() / tid.total : 0); }).observe($("tidRamme"));
 function tegnSkive(andel) {
     const R = 92, a = Math.max(0, Math.min(1, andel)) * Math.PI * 2;
     let d = "";
@@ -2639,7 +2678,7 @@ function visTid() {
     const ms = tidIgjen(), boks = $("tidtaker");
     $("tidVisning").textContent = tidFormat(ms);
     $("tidFyll").style.width = (tid.total ? Math.min(100, ms / tid.total * 100) : 0) + "%";
-    if (tidModus !== "tall") tegnSkive(tid.total ? ms / tid.total : 0);
+    tegnRing(tid.total ? ms / tid.total : 0);
     boks.classList.toggle("snart", ms > 0 && ms <= 30000 && tid.total > 30000);
     $("tidStart").textContent = tid.slutt ? "⏸ Pause" : ms <= 0 ? "▶ På nytt" : ms < tid.total ? "▶ Fortsett" : "▶ Start";
     // Vis gjenværende tid på knappen øverst når tidtakeren er skjult
@@ -2657,6 +2696,7 @@ function tidSteg() {
 }
 function tidStart() {
     if (tid.igjen <= 0) tid.igjen = tid.total;
+    if (tid.igjen <= 0) { visToast("Legg til tid med +1, +5 eller +10 først."); return; }
     lyd();
     tid.slutt = Date.now() + tid.igjen;
     tid.sistSek = null;
@@ -2690,7 +2730,9 @@ function tidJuster(d) {
         tid.slutt = Math.max(Date.now() + 1000, tid.slutt + d);
         tid.total = Math.max(tid.total + d, tid.slutt - Date.now());
     } else {
-        tid.igjen = Math.max(10000, (tid.igjen || 0) + d);
+        // Fra «ferdig» eller ved første trykk: start på et helt antall minutter
+        const fra = tid.igjen > 0 ? tid.igjen : 0;
+        tid.igjen = Math.max(0, Math.min(180 * 60000, fra + d));
         tid.total = tid.igjen;
     }
     visTid();
@@ -3576,12 +3618,10 @@ $("tidSkjul").addEventListener("click", vekslTidtaker);
 $("tidLukk").addEventListener("click", () => { tidNullstill(); $("tidtaker").classList.remove("stor"); $("tidtaker").hidden = true; visTid(); });
 $("tidStor").addEventListener("click", () => $("tidtaker").classList.toggle("stor"));
 $("tidModus").addEventListener("click", () => settTidModus(TID_MODI[(TID_MODI.indexOf(tidModus) + 1) % TID_MODI.length]));
-settTidModus(tidModus);
+settTidModus("tall");
 $("tidLyd").addEventListener("click", vekslLyd);
 $("tidStart").addEventListener("click", () => { if (tid.slutt) tidPause(); else tidStart(); });
 $("tidNull").addEventListener("click", tidNullstill);
-$("tidMinus").addEventListener("click", () => tidJuster(-60000));
-$("tidPluss").addEventListener("click", () => tidJuster(60000));
 try { $("tidOppgave").value = localStorage.getItem("klassekart_oppgave") || ""; } catch (e) { /* ikke viktig */ }
 $("tidOppgave").addEventListener("input", function () { try { localStorage.setItem("klassekart_oppgave", this.value); } catch (e) { /* ikke viktig */ } });
 $("tidOppgave").addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
@@ -3591,7 +3631,7 @@ $("tidOppgaver").addEventListener("click", e => {
     $("tidOppgave").value = b.dataset.oppg;
     try { localStorage.setItem("klassekart_oppgave", b.dataset.oppg); } catch (e2) { /* ikke viktig */ }
 });
-$("tidForvalg").addEventListener("click", e => { const b = e.target.closest("[data-sek]"); if (b) tidSett(+b.dataset.sek); });
+$("tidForvalg").addEventListener("click", e => { const b = e.target.closest("[data-min]"); if (b) tidJuster(+b.dataset.min * 60000); });
 oppdaterLydknapp();
 $("btnLyd").addEventListener("click", vekslLyd);
 function settHjulmodus(m) {
