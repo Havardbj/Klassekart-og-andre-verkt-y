@@ -902,7 +902,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.5.4</p>
+            <p class="info-versjon">Klassekart · versjon 1.5.5</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1217,6 +1217,52 @@ function normaliserKlasse(k) {
 
 const klasse = () => data.klasser[data.aktivKlasse] || null;
 const rom = () => { const k = klasse(), r = k ? k.rom[k.aktivtRom] : null; if (r && !r.faste) r.faste = {}; return r; };
+// Fyll fremst først, men spre pultene i den bakerste (delvis fylte) raden utover –
+// gjerne én på hver side av en midtgang – i stedet for å fylle fra venstre.
+function fremsteBord(r, aktive, antall) {
+    const P = r.pulter, ut = [];
+    const rader = {};
+    for (const id of aktive) (rader[Math.floor(id / P)] = rader[Math.floor(id / P)] || []).push(id);
+    for (const rad of Object.keys(rader).map(Number).sort((a, b) => a - b)) {
+        const ids = rader[rad], m = antall - ut.length;
+        if (m <= 0) break;
+        if (ids.length <= m) { ut.push(...ids); continue; }
+        // Del raden i sider skilt av midtganger (skjulte pulter)
+        const sider = [];
+        let side = [];
+        for (let c = 0; c < P; c++) {
+            const id = rad * P + c;
+            if (ids.includes(id)) side.push(id);
+            else if (side.length) { sider.push(side); side = []; }
+        }
+        if (side.length) sider.push(side);
+        // Fordel pultene på sidene: jevnt, og flest der det er flest pulter
+        const antPer = sider.map(() => 0);
+        const sideRekke = sider.length > m
+            ? Array.from({ length: m }, (_, j) => Math.round((j + 0.5) * sider.length / m - 0.5))
+            : null;
+        if (sideRekke) sideRekke.forEach(i => antPer[i]++);
+        else for (let j = 0; j < m; j++) {
+            let best = 0;
+            sider.forEach((sd, i) => { if (antPer[i] < sd.length && (antPer[best] >= sider[best].length || antPer[i] / sd.length < antPer[best] / sider[best].length)) best = i; });
+            antPer[best]++;
+        }
+        const midt = (P - 1) / 2;
+        sider.forEach((sd, i) => {
+            const q = antPer[i];
+            if (!q) return;
+            if (q === 1) {   // én pult: den nærmest midten av rommet
+                ut.push(sd.reduce((a, b) => Math.abs(b % P - midt) < Math.abs(a % P - midt) ? b : a));
+                return;
+            }
+            const valgt = new Set();
+            for (let j = 0; j < q; j++) valgt.add(sd[Math.min(sd.length - 1, Math.round((j + 0.5) * sd.length / q - 0.5))]);
+            for (const id of sd) if (valgt.size < q && !valgt.has(id)) valgt.add(id);
+            ut.push(...valgt);
+        });
+    }
+    return ut;
+}
 function aktiveBord(r) {
     const ut = [];
     for (let i = 0; i < r.rader * r.pulter; i++) if (!r.skjulte.includes(i)) ut.push(i);
@@ -1909,6 +1955,7 @@ function lagKart(k, r, valg = {}) {
         return null;
     }
     const minBord = Math.min(aktive.length, Math.max(valg.antallBord || Math.ceil(n / S), laasteBord.size));
+    const spreBakerst = !valg.grupper && r.mal !== "hestesko";
     function lagStart() {
         let bordListe = null;
         // Jevn fordeling: f.eks. 14 elever i grupper på 3 → 3+3+3+3+2, ikke 3+3+3+3+1+1
@@ -1919,7 +1966,7 @@ function lagKart(k, r, valg = {}) {
         if (!bordListe) bordListe = pakk(Array(aktive.length).fill(S));
         if (!bordListe) return null;
         const bordPult = bordListe.pult || {};
-        let valgte = inn.fyllFremst ? aktive.slice(0, bordListe.length) : blande([...aktive]).slice(0, bordListe.length);
+        let valgte = inn.fyllFremst ? (spreBakerst ? fremsteBord(r, aktive, bordListe.length) : aktive.slice(0, bordListe.length)) : blande([...aktive]).slice(0, bordListe.length);
         // Låste pulter må være med
         for (const pult of laasteBord) {
             if (valgte.includes(pult)) continue;
