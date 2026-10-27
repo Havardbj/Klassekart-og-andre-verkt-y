@@ -307,6 +307,10 @@ body.mobil .avslor-bilde{width:76px;height:76px}
 .hjul-midt:disabled{cursor:default;background:#4b5563}
 .hjul-resultat{font-size:2.6em;font-weight:800;min-height:1.3em;text-align:center}
 .hjul-resultat.vis{animation:pop .5s ease}
+.hjul-modus{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-right:4px}
+.hjul-modus button{border:0;background:#fff;padding:6px 11px;font:inherit;font-size:13.5px;cursor:pointer;border-right:1px solid var(--line);color:#374151}
+.hjul-modus button:last-child{border-right:0}
+.hjul-modus button.valgt{background:var(--accent);color:#fff}
 .hjul-resultat small{display:block;font-size:.4em;font-weight:500;color:var(--muted)}
 .hjul-trukket{color:var(--muted);font-size:.95em;max-width:34em;text-align:center;min-height:1.2em}
 .hjul-tom{font-size:1.3em;color:var(--muted);text-align:center;padding:4em 1em}
@@ -761,6 +765,10 @@ body.mobil .sete.ledig{font-size:.8em}
                 <button type="button" class="knapp liten" id="btnNyeRoller" title="Del ut rollene på nytt i de samme gruppene">↻ Nye roller</button>
             </span>
             <span class="hjulvelger" id="hjulVelger" hidden>
+                <span class="hjul-modus" role="group" aria-label="Hva skal på hjulet">
+                    <button type="button" data-hjulmodus="elever">👤 Elever</button>
+                    <button type="button" data-hjulmodus="grupper">👥 Grupper</button>
+                </span>
                 <label class="bryter liten-bryter"><input type="checkbox" id="hjulFjern"><span>Ta ut den som trekkes</span></label>
                 <button type="button" class="knapp" id="btnHjulNullstill" title="Legg alle tilbake på hjulet">↺ Alle med igjen</button>
                 <button type="button" class="knapp" id="btnLyd" title="Slå lyd av/på">🔊</button>
@@ -885,7 +893,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.3.11</p>
+            <p class="info-versjon">Klassekart · versjon 1.4.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1084,7 +1092,7 @@ function nyKlasseData() {
         aktivtRom: 0,
         visning: "kart",
         grupper: { modus: "storrelse", storrelse: 3, antall: 5, metode: "tilfeldig", siste: null, roller: { paa: false, liste: [...STANDARD_ROLLER] }, rolleLogg: [] },
-        hjul: { fjern: true, dato: idag(), ute: [] },
+        hjul: { fjern: true, dato: idag(), ute: [], modus: "elever", uteGrupper: [], gruppeNokkel: "" },
         bilder: {},
         visBilder: false,
         bildeUtsnitt: 2
@@ -1164,7 +1172,10 @@ function normaliserKlasse(k) {
     ut.hjul = {
         fjern: typeof h.fjern === "boolean" ? h.fjern : true,
         dato: String(h.dato || idag()),
-        ute: Array.isArray(h.ute) ? h.ute.map(ryddNavn).filter(Boolean) : []
+        ute: Array.isArray(h.ute) ? h.ute.map(ryddNavn).filter(Boolean) : [],
+        modus: h.modus === "grupper" ? "grupper" : "elever",
+        uteGrupper: Array.isArray(h.uteGrupper) ? h.uteGrupper.map(String) : [],
+        gruppeNokkel: String(h.gruppeNokkel || "")
     };
     for (const n in (k.bilder || {})) {
         const b = k.bilder[n], navn = ryddNavn(n);
@@ -2242,13 +2253,30 @@ function hjulData(k) {
     if (k.hjul.dato !== idag()) { k.hjul.dato = idag(); k.hjul.ute = []; hjulSist = null; }
     return k.hjul;
 }
+const iGruppehjul = k => k && k.hjul.modus === "grupper";
+// Gruppene fra Grupper-verktøyet som felt på hjulet («Gruppe 1», «Gruppe 2» …)
+function hjulGrupper(k) {
+    const siste = k.grupper.siste;
+    const liste = siste && Array.isArray(siste.grupper) ? siste.grupper : [];
+    const nokkel = JSON.stringify(liste);
+    if (k.hjul.gruppeNokkel !== nokkel) { k.hjul.gruppeNokkel = nokkel; k.hjul.uteGrupper = []; if (iGruppehjul(k)) hjulSist = null; }
+    return liste.map((medl, i) => ({ navn: "Gruppe " + (i + 1), medl, farge: FARGER[i % FARGER.length] }));
+}
+// Listen over de som er trukket ut, for det hjulet som vises nå
+function hjulUte(k) { const h = hjulData(k); return iGruppehjul(k) ? h.uteGrupper : h.ute; }
 function hjulNavn(k) {
+    const ute = new Set(hjulUte(k));
+    if (iGruppehjul(k)) return hjulGrupper(k).map(g => g.navn).filter(n => !ute.has(n));
     const frav = new Set(dagensFravaer(k));
-    const ute = new Set(hjulData(k).ute);
     return k.elever.filter(x => !frav.has(x) && !ute.has(x));
 }
+function hjulFarger(k, navn) {
+    if (!iGruppehjul(k)) return null;
+    const g = hjulGrupper(k);
+    return navn.map(n => (g.find(x => x.navn === n) || {}).farge || "#e5e7eb");
+}
 
-function tegnHjulCanvas(navn) {
+function tegnHjulCanvas(navn, egneFarger) {
     const c = $("hjulCanvas");
     const str = c.clientWidth;
     if (!str) return;
@@ -2267,7 +2295,7 @@ function tegnHjulCanvas(navn) {
     for (let i = 0; i < n; i++) {
         const a0 = hjulVinkel + i * w;
         g.beginPath(); g.moveTo(R, R); g.arc(R, R, R, a0, a0 + w); g.closePath();
-        g.fillStyle = farger[i % farger.length]; g.fill();
+        g.fillStyle = egneFarger ? egneFarger[i] : farger[i % farger.length]; g.fill();
         g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = Math.max(1, str / 300); g.stroke();
         // Navn langs radien
         g.save();
@@ -2293,24 +2321,36 @@ function tegnHjulVisning() {
     const tom = !navn.length;
     $("hjulMidt").disabled = tom || hjulSnurrer;
     if (tom && !hjulSist) $("hjulResultat").innerHTML = "";
+    const gr = iGruppehjul(k);
     if (tom) {
         $("hjulResultat").className = "hjul-resultat";
-        $("hjulResultat").textContent = k.elever.length ? "Alle er trukket! 🎉" : "Ingen elever ennå";
+        $("hjulResultat").textContent = gr
+            ? (hjulGrupper(k).length ? "Alle gruppene er trukket! 🎉" : "Lag grupper først i 👥 Grupper")
+            : (k.elever.length ? "Alle er trukket! 🎉" : "Ingen elever ennå");
     }
-    const ute = hjulData(k).ute;
-    $("hjulTrukket").textContent = ute.length ? "Trukket i dag: " + ute.join(", ") : "";
+    const ute = hjulUte(k);
+    $("hjulTrukket").textContent = !ute.length ? "" : gr
+        ? "Rekkefølge: " + ute.map((n, i) => `${i + 1}. ${n}`).join(" · ")
+        : "Trukket i dag: " + ute.join(", ");
     tegnStatus();
     tilpassKart();
-    tegnHjulCanvas(navn);
+    tegnHjulCanvas(navn, hjulFarger(k, navn));
 }
 
 function tegnHjulStatus() {
     const st = $("status"), k = klasse();
     st.innerHTML = "";
     const linje = (type, tekst) => st.append(el("div", "status-linje " + type, tekst));
-    const navn = hjulNavn(k), h = hjulData(k), frav = dagensFravaer(k);
+    const navn = hjulNavn(k), h = hjulData(k), frav = dagensFravaer(k), ute = hjulUte(k);
+    if (iGruppehjul(k)) {
+        const deler = [`${navn.length} grupper på hjulet`];
+        if (ute.length) deler.push(`${ute.length} trukket`);
+        linje("info", deler.join(" · "));
+        linje("dempet", hjulGrupper(k).length ? "Gruppene er de du sist laget i 👥 Grupper. " + (h.fjern ? "Den som trekkes, tas ut – fint for rekkefølgen på presentasjoner." : "Alle gruppene blir værende på hjulet.") : "Lag grupper i 👥 Grupper først, så kommer de på hjulet.");
+        return;
+    }
     const deler = [`${navn.length} elever på hjulet`];
-    if (h.ute.length) deler.push(`${h.ute.length} trukket i dag`);
+    if (ute.length) deler.push(`${ute.length} trukket i dag`);
     if (frav.length) deler.push(`${frav.length} borte (ikke med)`);
     linje("info", deler.join(" · "));
     linje("dempet", "Trykk SNURR eller mellomrom. " + (h.fjern ? "Den som trekkes, tas ut av hjulet til neste snurr, så alle får tur." : "Alle blir værende på hjulet."));
@@ -2495,11 +2535,18 @@ function snurrHjul() {
     const k = klasse(); if (!k || hjulSnurrer) return;
     const h = hjulData(k);
     // Ta ut forrige vinner først nå, så hjulet viser hvor det stoppet
-    if (h.fjern && hjulSist && !h.ute.includes(hjulSist)) h.ute.push(hjulSist);
+    const ute = hjulUte(k);
+    if (h.fjern && hjulSist && !ute.includes(hjulSist)) ute.push(hjulSist);
     hjulSist = null;
     lagre();
     const navn = hjulNavn(k);
-    if (!navn.length) { tegnKart(); visToast(k.elever.length ? "Alle er trukket. Trykk «↺ Alle med igjen»." : "Legg inn elever først."); return; }
+    if (!navn.length) {
+        tegnKart();
+        if (iGruppehjul(k)) visToast(hjulGrupper(k).length ? "Alle gruppene er trukket. Trykk «↺ Alle med igjen»." : "Lag grupper i 👥 Grupper først.");
+        else visToast(k.elever.length ? "Alle er trukket. Trykk «↺ Alle med igjen»." : "Legg inn elever først.");
+        return;
+    }
+    const egneFarger = hjulFarger(k, navn);
     hjulNavnVedStart = navn;
     hjulSnurrer = true;
     const res = $("hjulResultat");
@@ -2521,7 +2568,7 @@ function snurrHjul() {
     const steg = naa => {
         const t = Math.min(1, (naa - t0) / varighet);
         hjulVinkel = start + delta * ease(t);
-        tegnHjulCanvas(navn);
+        tegnHjulCanvas(navn, egneFarger);
         // Tikk hver gang et nytt felt passerer pekeren
         const felt = Math.floor((((peker - hjulVinkel) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / w);
         if (felt !== forrigeFelt) { forrigeFelt = felt; tikk(); }
@@ -2531,9 +2578,15 @@ function snurrHjul() {
         hjulSist = navn[vinner];
         vib([25, 40, 25]);
         res.innerHTML = "";
-        const foto = elevBilde(navn[vinner]);
-        if (foto) { const im = el("img", "hjul-foto"); im.src = foto; im.alt = ""; res.append(im); }
-        res.append(document.createTextNode(navn[vinner]));
+        if (iGruppehjul(k)) {
+            const g = hjulGrupper(k).find(x => x.navn === navn[vinner]);
+            res.append(document.createTextNode(navn[vinner]));
+            if (g) res.append(el("small", null, g.medl.join(", ")));
+        } else {
+            const foto = elevBilde(navn[vinner]);
+            if (foto) { const im = el("img", "hjul-foto"); im.src = foto; im.alt = ""; res.append(im); }
+            res.append(document.createTextNode(navn[vinner]));
+        }
         void res.offsetWidth; res.className = "hjul-resultat vis";
         fanfare();
         konfetti(res);
@@ -2683,6 +2736,7 @@ function tegnVisningsvalg() {
     $("btnRollerEndre").hidden = !k.grupper.roller.paa;
     $("btnNyeRoller").hidden = !(k.grupper.roller.paa && k.grupper.siste);
     $("hjulFjern").checked = k.hjul.fjern;
+    document.querySelectorAll("[data-hjulmodus]").forEach(b => b.classList.toggle("valgt", b.dataset.hjulmodus === k.hjul.modus));
     $("gruppeModus").value = k.grupper.modus;
     const tall = $("gruppeTall");
     if (k.grupper.modus === "antall") { tall.min = 2; tall.max = 15; tall.value = k.grupper.antall; }
@@ -3036,7 +3090,7 @@ function tilpassKart() {
         ark.style.marginTop = erMobilApp() && !erTavle() ? Math.max(0, (ramme.clientHeight - h * f) * 0.38) + "px" : "0";   // litt over midten på mobil
         ark.style.marginBottom = -(h * (1 - f)) + "px";    // ingen tom plass under
     }
-    if (iHjulmodus() && !hjulSnurrer) tegnHjulCanvas(hjulNavn(klasse()));
+    if (iHjulmodus() && !hjulSnurrer) { const k = klasse(), n = hjulNavn(k); tegnHjulCanvas(n, hjulFarger(k, n)); }
     if (erMobilApp() && mFane === "kart") {   // vis/skjul tipset om å snu telefonen
         const vis = !!document.querySelector("#mChips .m-chip.info") && /Snu/.test($("mChips").textContent);
         const t = ark.style.transform.match(/scale\(([\d.]+)\)/);
@@ -3225,10 +3279,19 @@ $("tidOppgaver").addEventListener("click", e => {
 $("tidForvalg").addEventListener("click", e => { const b = e.target.closest("[data-sek]"); if (b) tidSett(+b.dataset.sek); });
 oppdaterLydknapp();
 $("btnLyd").addEventListener("click", vekslLyd);
+function settHjulmodus(m) {
+    const k = klasse(); if (!k || hjulSnurrer || k.hjul.modus === m) return;
+    k.hjul.modus = m; hjulSist = null;
+    $("hjulResultat").innerHTML = "";
+    lagre(); tegnVisningsvalg(); tegnKart();
+    if (erMobilApp()) { tegnMChips(); tegnMHandling(); }
+}
+document.querySelectorAll("[data-hjulmodus]").forEach(b => b.addEventListener("click", () => settHjulmodus(b.dataset.hjulmodus)));
 $("hjulFjern").addEventListener("change", function () { klasse().hjul.fjern = this.checked; lagre(); tegnHjulStatus(); });
 $("btnHjulNullstill").addEventListener("click", () => {
     const k = klasse(); if (!k || hjulSnurrer) return;
-    k.hjul.ute = []; hjulSist = null; lagre();
+    if (iGruppehjul(k)) k.hjul.uteGrupper = []; else k.hjul.ute = [];
+    hjulSist = null; lagre();
     $("hjulResultat").textContent = "";
     tegnKart();
 });
@@ -3494,7 +3557,8 @@ function tegnMChips() {
         chip(`🏫 ${rom().navn} ▾`, () => aapneArk(oppsettArk));
     } else if (mFane === "hjul") {
         chip(k.hjul.fjern ? "✓ Ta ut den som trekkes" : "Alle blir på hjulet", () => { $("hjulFjern").click(); tegnMChips(); }, k.hjul.fjern ? "paa" : "");
-        if (k.hjul.ute.length) chip("↺ Alle med igjen", () => $("btnHjulNullstill").click());
+        chip(iGruppehjul(k) ? "👥 Grupper ⇄" : "👤 Elever ⇄", () => settHjulmodus(iGruppehjul(k) ? "elever" : "grupper"), "paa");
+        if (hjulUte(k).length) chip("↺ Alle med igjen", () => $("btnHjulNullstill").click());
         chip(lydPaa ? "🔊" : "🔇", () => { vekslLyd(); tegnMChips(); });
     }
     if (mFane === "kart" && !redigerRom && window.innerHeight > window.innerWidth) {
