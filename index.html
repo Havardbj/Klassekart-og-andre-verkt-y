@@ -902,7 +902,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.5.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.5.4</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -3654,13 +3654,20 @@ function tegnMChips() {
     if (!k || !["kart", "grupper", "hjul"].includes(mFane)) return;
     const chip = (tekst, ved, kl = "") => boks.append(mKnapp(tekst, "m-chip " + kl, ved));
     const stor = t => t.charAt(0).toUpperCase() + t.slice(1);
+    // Bilder av/på rett i verktøylinjen (vises når klassen har bilder på denne enheten)
+    const bildeChip = () => {
+        if (!Object.keys(k.bilder || {}).length) return;
+        chip(k.visBilder ? "📷 Bilder ✓" : "📷 Bilder", () => { k.visBilder = !k.visBilder; lagre(); tegnKart(); tegnMChips(); }, k.visBilder ? "paa" : "");
+    };
     if (mFane === "grupper") {
         const g = k.grupper;
         chip(g.modus === "antall" ? `👥 ${g.antall} grupper ▾` : `👥 Grupper på ${g.storrelse} ▾`, () => aapneArk(grupperArk, { modal: false }));
         chip(`⚖️ ${stor(METODE_NAVN[g.metode])} ▾`, () => aapneArk(grupperArk, { modal: false }));
+        bildeChip();
     } else if (mFane === "kart") {
         chip(`🎲 ${stor(METODE_NAVN[k.innstillinger.metode])} ▾`, () => aapneArk(kartFordelingArk));
         chip(`🏫 ${rom().navn} ▾`, () => aapneArk(oppsettArk));
+        bildeChip();
     } else if (mFane === "hjul") {
         chip(k.hjul.fjern ? "✓ Ta ut den som trekkes" : "Alle blir på hjulet", () => { $("hjulFjern").click(); tegnMChips(); }, k.hjul.fjern ? "paa" : "");
         chip(iGruppehjul(k) ? "👥 Grupper ⇄" : "👤 Elever ⇄", () => settHjulmodus(iGruppehjul(k) ? "elever" : "grupper"), "paa");
