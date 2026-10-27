@@ -393,6 +393,7 @@ body.romredigering .verktoy,body.romredigering .status{display:none}
 .tidtaker.innebygd .tid-oppgaver button{padding:7px 12px;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.06);border-color:transparent}
 .sete.med-rolle{flex-direction:column;line-height:1.15;gap:.05em;white-space:normal}
 .sete.med-foto{flex-direction:column;gap:.25em;padding:.35em .3em .3em;line-height:1.15}
+#rom.med-bilder .bord .seter{min-height:7.4em}
 .sete-foto{width:4.4em;height:5em;border-radius:.45em;object-fit:cover;object-position:50% 25%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none;background:#eef2f7}
 .sete.fravaer .sete-foto{filter:grayscale(1)}
 .sete .rolle{font-size:.72em;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -901,7 +902,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.5.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.5.3</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2638,13 +2639,34 @@ function stokkSteg() {
     if (!stokk) return;
     const t = (performance.now() - stokk.t0) / stokk.varighet;
     if (t >= 1) { ferdigStokk(); return; }
-    const k = klasse(), seter = [...document.querySelectorAll(`#${stokk.boks} .sete.elev:not(.fravaer)`)];
-    // Hver plass viser et tilfeldig navn – helst forskjellige navn på skjermen samtidig
+    const k = klasse();
+    const kart = stokk.boks === "rom";
+    // I kartet er også de ledige pultene med i lotteriet
+    const seter = [...document.querySelectorAll(kart ? "#rom .sete.elev:not(.fravaer), #rom .sete.ledig" : "#grupper .sete.elev:not(.fravaer)")];
     const kø = blande(stokk.pool.slice());
+    // Hvilke plasser som får et navn denne gangen (resten vises som ledige)
+    const medNavn = kart ? new Set(blande(seter.map((_, i) => i)).slice(0, kø.length)) : null;
+    // Ingen pult skal røpe at den blir tom – alle får farge mens det stokkes
+    if (kart) document.querySelectorAll("#rom .bord.tomt").forEach(b => b.classList.remove("tomt"));
+    let ni = 0;
     seter.forEach((s, i) => {
-        const navn = kø[i % kø.length];
-        const sp = s.querySelector(":scope > span"); if (sp) sp.textContent = navn;
-        const im = s.querySelector(".sete-foto"); if (im) { const b = elevBilde(navn, k); if (b) im.src = b; }
+        if (kart) {
+            if (!medNavn.has(i)) {
+                if (!s.classList.contains("ledig")) { s.className = "sete ledig"; s.textContent = "ledig"; }
+                return;
+            }
+            if (!s.classList.contains("elev")) { s.className = "sete elev"; s.textContent = ""; s.append(el("span")); }
+            const navn = kø[ni++ % kø.length];
+            s.querySelector(":scope > span").textContent = navn;
+            const b = k.visBilder ? elevBilde(navn, k) : null;
+            let im = s.querySelector(".sete-foto");
+            if (b) { if (!im) { im = el("img", "sete-foto"); im.alt = ""; s.prepend(im); s.classList.add("med-foto"); } im.src = b; }
+            else if (im) { im.remove(); s.classList.remove("med-foto"); }
+        } else {
+            const navn = kø[i % kø.length];
+            const sp = s.querySelector(":scope > span"); if (sp) sp.textContent = navn;
+            const im = s.querySelector(".sete-foto"); if (im) { const b = elevBilde(navn, k); if (b) im.src = b; }
+        }
         s.classList.remove("hopp"); void s.offsetWidth; s.classList.add("hopp");
     });
     tikk();
@@ -2904,6 +2926,7 @@ function tegnRomStatus() {
 function tegnRomkart() {
     const k = klasse(), r = rom(), romEl = $("rom");
     romEl.innerHTML = "";
+    romEl.classList.toggle("med-bilder", !!(k && k.visBilder && Object.keys(k.bilder || {}).length));
     romEl.classList.remove("ny");
     if (!k) return;
     const kart = gjeldendeKart(r);
