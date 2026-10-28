@@ -976,7 +976,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.4</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2072,7 +2072,10 @@ function lagKart(k, r, valg = {}) {
                 const kand = [];
                 for (let b = 0; b < bord.length; b++) if (bordPult[b] === undefined && rest[b] >= len) kand.push(b);
                 if (!kand.length) { ok = false; break; }
-                const b = kand[tilfeldig(kand.length)];
+                // Fast plass: velg et bord med flest plasser, så eleven får en sidemann og ikke sitter alene
+                const flest = Math.max(...kand.map(b => rest[b]));
+                const beste = kand.filter(b => rest[b] === flest);
+                const b = beste[tilfeldig(beste.length)];
                 bordPult[b] = pult;
                 for (const u of us) bord[b].push(u);
                 rest[b] -= len;
