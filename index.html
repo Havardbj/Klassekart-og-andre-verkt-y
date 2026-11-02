@@ -274,6 +274,54 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .pdf-advarsel{color:var(--warn,#b45309);font-size:12.5px;margin:-4px 0 0 22px}
 .pdf-advarsel:empty{display:none}
 .pdf-klassevalg{padding:5px 8px;font-size:14px;border:1px solid var(--line);border-radius:8px;max-width:60%}
+.logg-bak{z-index:230;background:rgba(17,24,39,.75)}
+.logg-dialog{width:min(1100px,100%);height:min(760px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);gap:10px}
+.logg-innhold{display:flex;flex-direction:column;gap:10px;min-height:0;flex:1;overflow:hidden}
+.logg-topp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.logg-topp .fyll{flex:1}
+.pin-boks{display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 10px;text-align:center}
+.pin-felt{font-size:32px!important;letter-spacing:.5em;text-align:center;width:180px!important;padding:10px!important}
+.pin-melding{color:var(--bad);min-height:1.2em;margin:0}
+.rist{animation:rist .35s}
+@keyframes rist{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.logg-kolonner{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:14px;min-height:0;flex:1}
+.logg-elever{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;overflow:auto;align-content:start;padding:2px}
+.logg-elev{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 6px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font:inherit}
+.logg-elev:hover{border-color:var(--accent)}
+.logg-elev.valgt{border-color:var(--accent);box-shadow:0 0 0 2px rgba(29,111,184,.3);background:#f0f7ff}
+.logg-elev img{width:52px;height:60px;border-radius:8px;object-fit:cover;object-position:50% 25%}
+.logg-init{width:52px;height:52px;border-radius:50%;background:#eef2f7;display:grid;place-items:center;font-weight:800;color:#475569}
+.logg-navn{font-size:12.5px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logg-tall{position:absolute;top:4px;right:6px;font-size:11px;font-weight:800;background:#dcfce7;color:#166534;border-radius:999px;padding:1px 7px}
+.logg-tall.lav{background:#ffedd5;color:#9a3412}
+.logg-panel{border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px;background:#fafbfc}
+.logg-panel h3{margin:0;font-size:19px}
+.logg-panel h4{margin:8px 0 0;font-size:13.5px}
+.logg-notat{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;width:100%}
+.logg-kat{display:grid;grid-template-columns:1fr;gap:6px}
+.logg-kat .knapp{justify-content:flex-start;text-align:left;padding:10px 12px;font-size:14.5px;background:#fff}
+.logg-kat .knapp:hover{background:#ecfdf5;border-color:#86efac}
+.logg-linje{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid #eef0f3}
+.logg-linje .logg-dato{color:var(--muted);white-space:nowrap;font-size:12px}
+.logg-rapport{overflow:auto;display:flex;flex-direction:column;gap:6px}
+.logg-rapport h3{margin:0;font-size:17px}
+.logg-tabell{border-collapse:collapse;font-size:13.5px;width:100%}
+.logg-tabell th,.logg-tabell td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:center}
+.logg-tabell th:first-child,.logg-tabell td:first-child{text-align:left}
+.logg-tabell td.null{color:#cbd5e1}
+.logg-tabell td.sum{font-weight:800}
+.logg-tabell td.sum.lav{color:#c2410c}
+.logg-sammendrag{border:1px solid var(--line);border-radius:10px;padding:8px 12px;max-width:520px}
+#loggUtskrift{display:none}
+@media print{
+    body.skriver-logg > *:not(#loggUtskrift){display:none!important}
+    body.skriver-logg #loggUtskrift{display:block!important;padding:10mm;font-size:12pt}
+    body.skriver-logg #loggUtskrift .lenke{color:inherit;text-decoration:none;padding:0;border:0;background:none}
+}
+body.mobil .logg-dialog{width:100%;height:calc(var(--app-h,100dvh) - 20px);padding:12px}
+body.mobil .logg-kolonner{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;overflow:auto}
+body.mobil .logg-elever{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));max-height:42vh}
+body.tavlemodus #loggVindu{display:none!important}
 .stat-dialog{width:min(980px,100%);max-height:calc(100dvh - 32px);gap:10px}
 .stat-innhold{overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
 .stat-valg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -725,6 +773,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <button type="button" data-handling="importerPdf">📄 Importer klasseliste (PDF)</button>
                 <hr>
                 <button type="button" data-handling="statistikk">📊 Samarbeid og statistikk</button>
+                <button type="button" data-handling="laererlogg">📝 Lærerlogg <small style="color:var(--muted)">Alt+L</small></button>
                 <hr>
                 <button type="button" data-handling="hjelp">❓ Kom i gang</button>
                 <button type="button" data-handling="om">🔒 Om og personvern</button>
@@ -976,6 +1025,7 @@ body.mobil .sete.ledig{font-size:.8em}
             <ul>
                 <li>Hver enhet har sin egen lagring. Flytt klasser mellom PC, mobil og nettbrett med <b>⋯ → Eksporter backup</b> og <b>Importer backup</b>.</li>
                 <li>Backup-filen inneholder personopplysninger om elever. Oppbevar den som annen elevinformasjon, for eksempel i skolens OneDrive, ikke i privat e-post.</li>
+                <li><b>Lærerloggen</b> (⋯ → 📝 Lærerlogg) er låst med PIN, lagres for seg selv på enheten og vises aldri i kart, grupper, hjul eller på tavla. Den tas bare med i backup hvis du velger det. Loggen låses med Esc, når appen legges bort, og etter 5 minutter uten bruk.</li>
                 <li>Elevbilder (fra PDF-import eller kamera) lagres som små miniatyrer bare på enheten. Du velger selv om de skal være med i backupen, og kan slette dem under Elever.</li>
                 <li>Tømmer du nettleserdata på enheten, slettes også klassene. Ta backup jevnlig.</li>
                 <li>Opplysninger om nivå, faste plasser og hvem som skal holdes adskilt, er uskarpe på skjermen til du holder over eller trykker på dem, så de ikke vises når skjermen er delt med klassen.</li>
@@ -985,7 +1035,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.7</p>
+            <p class="info-versjon">Klassekart · versjon 1.7.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1065,6 +1115,13 @@ body.mobil .sete.ledig{font-size:.8em}
     </div>
 </div>
 <input type="file" id="importFil" hidden>
+<div class="dialog-bak logg-bak" id="loggVindu" hidden>
+    <div class="dialog logg-dialog" role="dialog" aria-modal="true" aria-labelledby="loggTittel">
+        <div class="info-hode"><h2 id="loggTittel">📝 Lærerlogg</h2><button type="button" class="regel-fjern" id="loggLukk" title="Lås og lukk (Esc)">×</button></div>
+        <div class="logg-innhold" id="loggInnhold"></div>
+    </div>
+</div>
+<div id="loggUtskrift"></div>
 <div class="dialog-bak" id="statVindu" hidden>
     <div class="dialog stat-dialog" role="dialog" aria-modal="true" aria-labelledby="statTittel">
         <div class="info-hode"><h2 id="statTittel">📊 Samarbeid</h2><button type="button" class="regel-fjern" id="statLukk" title="Lukk">×</button></div>
@@ -1574,6 +1631,7 @@ const handlinger = {
         const ny = {};
         for (const n of Object.keys(data.klasser)) ny[n === gammelt ? nytt : n] = data.klasser[n];
         data.klasser = ny;
+        loggByttKlasse(gammelt, nytt);
         data.aktivKlasse = nytt;
         lagre(); oppdaterAlt();
     },
@@ -1597,6 +1655,13 @@ const handlinger = {
             if (!med) { klasser = {}; for (const n in data.klasser) klasser[n] = Object.assign({}, data.klasser[n], { bilder: {} }); }
         }
         const innhold = { app: "klassekart", versjon: 3, eksportert: new Date().toISOString(), klasser };
+        if (!loggTom()) {
+            const svar = visDialog("Ta med lærerloggen i backupen?\n\nLoggen inneholder vurderingsinformasjon om elevene. Ta den bare med hvis filen skal til en annen av dine egne enheter.");
+            $("dialogOk").textContent = "Med logg"; $("dialogAvbryt").textContent = "Uten logg";
+            const med = await svar;
+            $("dialogAvbryt").textContent = "Avbryt";
+            if (med) innhold.logg = logg;
+        }
         const filnavn = `klassekart-backup-${idag()}.json`;
         const blob = new Blob([JSON.stringify(innhold, null, 2)], { type: "application/json" });
         // iPhone/iPad: bruk del-arket («Arkiver i Filer», AirDrop, e-post …) – vanlig nedlasting er upålitelig der
@@ -1622,6 +1687,7 @@ const handlinger = {
     importer() { $("importFil").click(); },
     importerPdf() { pdfLeggTil = false; $("pdfFil").click(); },
     statistikk() { visStatistikk(); },
+    laererlogg() { aapneLogg(); },
     hjelp() { visInfo("hjelp"); },
     om() { visInfo("om"); }
 };
@@ -1645,6 +1711,15 @@ $("importFil").addEventListener("change", function () {
         if (await bekreft(melding)) {
             lesElevliste();
             for (const n of navn) data.klasser[n] = normaliserKlasse(klasser[n]);
+            if (innhold && innhold.logg && innhold.logg.klasser) {   // lærerlogg fra en annen enhet slås sammen
+                for (const kn in innhold.logg.klasser) {
+                    const l = loggFor(kn), ider = new Set(l.map(e => e.id));
+                    for (const e of innhold.logg.klasser[kn] || []) if (e && e.elev && !ider.has(e.id)) l.push(e);
+                    l.sort((a, b) => (b.dato + (b.tid || "")).localeCompare(a.dato + (a.tid || "")));
+                }
+                if (Array.isArray(innhold.logg.kategorier)) logg.kategorier = unike([...logg.kategorier, ...innhold.logg.kategorier.map(String)]).slice(0, 20);
+                lagreLogg();
+            }
             // Eksempelklassen fjernes hvis den ikke er brukt
             const eks = data.klasser["Eksempelklasse"];
             if (eks && !navn.includes("Eksempelklasse") && eks.elever.join() === EKSEMPEL_ELEVER.join() && !eks.partnere.length && !eks.adskilt.length) delete data.klasser["Eksempelklasse"];
@@ -4207,6 +4282,7 @@ function klasseArk(inn) {
     h("📄 Importer klasseliste (PDF)", "importerPdf");
     if (installerKanVises()) inn.append(mKnapp("📲 Installer som app", "m-handling-rad", () => { lukkArk(); visInstaller(true); }));
     inn.append(mKnapp("📊 Samarbeid og statistikk", "m-handling-rad", () => { lukkArk(); visStatistikk(); }));
+    inn.append(mKnapp("📝 Lærerlogg", "m-handling-rad", () => { lukkArk(); aapneLogg(); }));
     h("❓ Kom i gang", "hjelp");
     h("🔒 Om og personvern", "om");
     if (data.aktivKlasse) h("🗑️ Slett klassen", "slett", true);
@@ -4384,6 +4460,7 @@ function endreElevNavn(k, gammelt, nytt) {
 // Flytter alt som hører til en elev (regler, nivå, fravær, plasser, bilde …) over til et nytt navn
 function flyttElevData(k, gammelt, nytt) {
     const bytt = x => x === gammelt ? nytt : x;
+    try { const kn = Object.keys(data.klasser).find(n => data.klasser[n] === k); if (kn) loggByttElev(kn, gammelt, nytt); } catch (e) { }
     const byttPar = p => { const [a, b] = p.split("|"); return (a === gammelt || b === gammelt) ? parNokkel(bytt(a), bytt(b)) : p; };
     for (const t of ["kart", "grupper"]) for (const e of (k.historikk && k.historikk[t]) || []) e.par = e.par.map(byttPar);
     for (const e of k.grupper.rolleLogg || []) if (e.roller && gammelt in e.roller) { e.roller[nytt] = e.roller[gammelt]; delete e.roller[gammelt]; }
@@ -5470,6 +5547,301 @@ $("statVindu").addEventListener("click", e => { if (e.target === $("statVindu"))
 $("statNullstill").addEventListener("click", nullstillStatistikk);
 $("btnStat2").addEventListener("click", visStatistikk);
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("statVindu").hidden) lukkStat(); });
+
+// ================= Lærerlogg (skjult, låst med PIN) =================
+// Faglige observasjoner per elev til bruk i vurderingen. Lagres for seg selv på enheten
+// (ikke i vanlig backup med mindre man velger det) og vises aldri i kart, grupper, hjul eller tavle.
+const LOGG_LAGRING = "klassekart_logg";
+const LOGG_PIN = "klassekart_logg_pin";
+const STANDARD_LOGGKAT = ["💡 God faglig refleksjon", "🗣️ Forklarer og argumenterer faglig", "❓ Stiller gode faglige spørsmål",
+    "🧩 Løser oppgaver selvstendig", "🤝 Hjelper andre faglig", "🎯 Viser god forståelse"];
+let logg = { kategorier: [...STANDARD_LOGGKAT], klasser: {} };
+try {
+    const l = JSON.parse(localStorage.getItem(LOGG_LAGRING) || "null");
+    if (l && typeof l === "object") {
+        if (Array.isArray(l.kategorier) && l.kategorier.length) logg.kategorier = l.kategorier.map(String).slice(0, 20);
+        if (l.klasser && typeof l.klasser === "object") logg.klasser = l.klasser;
+    }
+} catch (e) { /* tom logg */ }
+function lagreLogg() {
+    try { localStorage.setItem(LOGG_LAGRING, JSON.stringify(logg)); }
+    catch (e) { visToast("Klarte ikke å lagre loggen.", "feil"); }
+}
+const loggFor = navn => (logg.klasser[navn] = logg.klasser[navn] || []);
+const loggTom = () => !Object.values(logg.klasser).some(l => l.length);
+
+// ---------- PIN ----------
+async function pinHash(pin) {
+    const tekst = "klassekart:" + pin;
+    try {
+        const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tekst));
+        return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+    } catch (e) {   // reserve uten crypto.subtle
+        let h = 2166136261; for (const c of tekst) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+        return "f" + (h >>> 0).toString(16);
+    }
+}
+let loggApen = false, loggTimer = null;
+const LOGG_LAAS_ETTER = 5 * 60 * 1000;
+function loggAktivitet() { clearTimeout(loggTimer); loggTimer = setTimeout(lukkLogg, LOGG_LAAS_ETTER); }
+
+function aapneLogg() {
+    if (!klasse()) { visToast("Lag en klasse først."); return; }
+    $("loggVindu").hidden = false;
+    let lagret = null;
+    try { lagret = localStorage.getItem(LOGG_PIN); } catch (e) { }
+    tegnPin(lagret ? "laas" : "ny");
+}
+function lukkLogg() {
+    loggApen = false;
+    clearTimeout(loggTimer);
+    $("loggVindu").hidden = true;
+    $("loggInnhold").innerHTML = "";
+}
+function tegnPin(modus, forste) {
+    const inn = $("loggInnhold");
+    inn.innerHTML = "";
+    $("loggTittel").textContent = "📝 Lærerlogg";
+    const boks = el("div", "pin-boks");
+    const tekst = modus === "ny" ? "Velg en PIN-kode på 4 siffer for lærerloggen." : modus === "bekreft" ? "Skriv PIN-koden en gang til." : "Skriv PIN-koden for å åpne lærerloggen.";
+    boks.append(el("p", null, tekst));
+    const felt = el("input", "pin-felt"); felt.type = "password"; felt.inputMode = "numeric"; felt.maxLength = 4; felt.autocomplete = "off"; felt.placeholder = "••••";
+    const melding = el("p", "pin-melding");
+    boks.append(felt, melding);
+    if (modus === "ny") boks.append(el("p", "hjelp", "Loggen lagres bare på denne enheten. Den vises aldri i kart, grupper, hjul eller på tavla, og tas ikke med i vanlig backup."));
+    if (modus === "laas") {
+        const glemt = el("button", "lenke", "Glemt PIN-koden?"); glemt.type = "button";
+        glemt.addEventListener("click", async () => {
+            if (!(await bekreft("Uten PIN-koden kan ikke loggen åpnes. Vil du slette hele lærerloggen på denne enheten og lage en ny PIN?\n\nDette kan ikke angres."))) return;
+            logg.klasser = {}; lagreLogg();
+            try { localStorage.removeItem(LOGG_PIN); } catch (e) { }
+            tegnPin("ny");
+        });
+        boks.append(glemt);
+    }
+    inn.append(boks);
+    felt.focus();
+    felt.addEventListener("input", async () => {
+        felt.value = felt.value.replace(/\D/g, "");
+        if (felt.value.length < 4) return;
+        const pin = felt.value;
+        if (modus === "ny") { tegnPin("bekreft", pin); return; }
+        if (modus === "bekreft") {
+            if (pin !== forste) { tegnPin("ny"); visToast("Kodene var ikke like. Prøv igjen."); return; }
+            try { localStorage.setItem(LOGG_PIN, await pinHash(pin)); } catch (e) { }
+            loggApen = true; loggAktivitet(); tegnLogg(); return;
+        }
+        let lagret = null; try { lagret = localStorage.getItem(LOGG_PIN); } catch (e) { }
+        if (lagret === await pinHash(pin)) { loggApen = true; loggAktivitet(); tegnLogg(); }
+        else { melding.textContent = "Feil PIN-kode."; felt.value = ""; felt.classList.add("rist"); setTimeout(() => felt.classList.remove("rist"), 400); }
+    });
+}
+
+// ---------- Registrering ----------
+const loggTilstand = { fane: "registrer", elev: "", periode: "termin", sortering: "navn" };
+function loggPeriodeStart() {
+    const d = new Date(), m = d.getMonth();
+    if (loggTilstand.periode === "termin") { if (m >= 7) d.setMonth(7, 1); else d.setMonth(0, 1); }
+    else if (loggTilstand.periode === "aar") { if (m >= 7) d.setMonth(7, 1); else { d.setFullYear(d.getFullYear() - 1); d.setMonth(7, 1); } }
+    else if (loggTilstand.periode === "4u") d.setDate(d.getDate() - 28);
+    else return "";
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function loggOppforinger(klassenavn) {
+    const fra = loggPeriodeStart();
+    return loggFor(klassenavn).filter(e => !fra || e.dato >= fra);
+}
+function tegnLogg() {
+    if (!loggApen) return;
+    const k = klasse(), inn = $("loggInnhold");
+    $("loggTittel").textContent = `📝 Lærerlogg · ${data.aktivKlasse}`;
+    inn.innerHTML = "";
+    const topp = el("div", "logg-topp");
+    const seg = el("div", "pdf-seg");
+    for (const [v, t] of [["registrer", "✏️ Registrer"], ["rapport", "📋 Rapport"]]) {
+        const b = el("button", loggTilstand.fane === v ? "valgt" : "", t); b.type = "button";
+        b.addEventListener("click", () => { if (v === "rapport" && loggTilstand.fane !== "rapport") loggTilstand.elev = ""; loggTilstand.fane = v; tegnLogg(); });
+        seg.append(b);
+    }
+    topp.append(seg);
+    const per = el("select", "stat-elevvalg");
+    [["termin", "Denne terminen"], ["aar", "Dette skoleåret"], ["4u", "Siste 4 uker"], ["alt", "Alt"]].forEach(([v, t]) => per.append(new Option(t, v)));
+    per.value = loggTilstand.periode;
+    per.addEventListener("change", () => { loggTilstand.periode = per.value; tegnLogg(); });
+    topp.append(per);
+    const laas = el("button", "knapp liten", "🔒 Lås (Esc)"); laas.type = "button"; laas.addEventListener("click", lukkLogg);
+    topp.append(el("span", "fyll"), laas);
+    inn.append(topp);
+    if (loggTilstand.fane === "registrer") tegnLoggRegistrer(inn, k); else tegnLoggRapport(inn, k);
+}
+function tellPerElev(oppf) {
+    const t = {};
+    for (const e of oppf) t[e.elev] = (t[e.elev] || 0) + 1;
+    return t;
+}
+function tegnLoggRegistrer(inn, k) {
+    const oppf = loggOppforinger(data.aktivKlasse), teller = tellPerElev(oppf);
+    if (loggTilstand.elev && !k.elever.includes(loggTilstand.elev)) loggTilstand.elev = "";
+    const kol = el("div", "logg-kolonner");
+    // Elevrutenett
+    const rutenett = el("div", "logg-elever");
+    const snitt = k.elever.length ? oppf.length / k.elever.length : 0;
+    sorter(k.elever).forEach(n => {
+        const b = el("button", "logg-elev" + (loggTilstand.elev === n ? " valgt" : "")); b.type = "button";
+        const foto = elevBilde(n, k);
+        if (foto) { const im = el("img"); im.src = foto; im.alt = ""; b.append(im); }
+        else b.append(el("span", "logg-init", initialer(n)));
+        b.append(el("span", "logg-navn", n));
+        const c = teller[n] || 0;
+        b.append(el("span", "logg-tall" + (c === 0 || c < snitt * 0.4 ? " lav" : ""), String(c)));
+        b.title = `${n}: ${c} registreringer i perioden`;
+        b.addEventListener("click", () => { loggTilstand.elev = n; loggAktivitet(); tegnLogg(); });
+        rutenett.append(b);
+    });
+    kol.append(rutenett);
+    // Panel for valgt elev
+    const panel = el("div", "logg-panel");
+    if (!loggTilstand.elev) {
+        panel.append(el("p", "hjelp", "Velg en elev til venstre. Tallet viser antall registreringer i perioden – oransje betyr få, så du ser hvem du bør legge merke til."));
+    } else {
+        const n = loggTilstand.elev;
+        panel.append(el("h3", null, n));
+        const notat = el("input", "logg-notat"); notat.type = "text"; notat.maxLength = 140; notat.placeholder = "Kort notat (valgfritt) – skriv før du trykker kategori";
+        panel.append(notat);
+        const kat = el("div", "logg-kat");
+        logg.kategorier.forEach(kt => {
+            const b = el("button", "knapp", kt); b.type = "button";
+            b.addEventListener("click", () => {
+                const naa = new Date();
+                loggFor(data.aktivKlasse).unshift({ id: Date.now() + Math.random(), dato: idag(), tid: naa.toTimeString().slice(0, 5), elev: n, kat: kt, notat: notat.value.trim() });
+                lagreLogg(); loggAktivitet(); vib(10);
+                visToast(`Registrert: ${n} – ${kt}`);
+                tegnLogg();
+            });
+            kat.append(b);
+        });
+        panel.append(kat);
+        const endre = el("button", "lenke", "✏️ Endre kategorier"); endre.type = "button";
+        endre.addEventListener("click", async () => {
+            const svar = await spor("Kategorier, skilt med komma:", logg.kategorier.join(", "));
+            if (svar == null) return;
+            const liste = unike(svar.split(",").map(x => x.trim()).filter(Boolean)).slice(0, 20);
+            if (liste.length) { logg.kategorier = liste; lagreLogg(); tegnLogg(); }
+        });
+        panel.append(endre);
+        // Siste registreringer for eleven
+        const mine = loggFor(data.aktivKlasse).filter(e => e.elev === n).slice(0, 8);
+        panel.append(el("h4", null, "Siste registreringer"));
+        if (!mine.length) panel.append(el("p", "hjelp", "Ingen ennå."));
+        mine.forEach(e => {
+            const l = el("div", "logg-linje");
+            l.append(el("span", "logg-dato", `${formaterDato(e.dato).replace(/^\S+ /, "")} ${e.tid || ""}`), el("span", null, e.kat + (e.notat ? " – " + e.notat : "")));
+            const x = el("button", "regel-fjern", "×"); x.type = "button"; x.title = "Slett registreringen";
+            x.addEventListener("click", () => { const l2 = loggFor(data.aktivKlasse); const i = l2.indexOf(e); if (i > -1) l2.splice(i, 1); lagreLogg(); tegnLogg(); });
+            l.append(x); panel.append(l);
+        });
+    }
+    kol.append(panel);
+    inn.append(kol);
+}
+function tegnLoggRapport(inn, k) {
+    const oppf = loggOppforinger(data.aktivKlasse), kat = logg.kategorier;
+    const brukteKat = unike([...kat, ...oppf.map(e => e.kat)]).filter(kt => oppf.some(e => e.kat === kt) || kat.includes(kt));
+    const valg = el("div", "logg-topp");
+    const velg = el("select", "stat-elevvalg");
+    velg.append(new Option("Hele klassen", ""));
+    sorter(k.elever).forEach(n => velg.append(new Option(n, n)));
+    velg.value = k.elever.includes(loggTilstand.elev) ? loggTilstand.elev : "";
+    const rapportElev = velg.value;
+    velg.addEventListener("change", () => { loggTilstand.elev = velg.value; tegnLogg(); });
+    const skriv = el("button", "knapp", "🖨️ Skriv ut / PDF"); skriv.type = "button";
+    skriv.addEventListener("click", () => skrivUtLogg(rapportElev));
+    valg.append(velg, el("span", "fyll"), skriv);
+    inn.append(valg);
+    const boks = el("div", "logg-rapport");
+    byggRapport(boks, k, oppf, brukteKat, rapportElev);
+    inn.append(boks);
+}
+function byggRapport(boks, k, oppf, brukteKat, elev) {
+    const per = { termin: "denne terminen", aar: "dette skoleåret", "4u": "de siste 4 ukene", alt: "hele perioden" }[loggTilstand.periode];
+    if (!elev) {
+        boks.append(el("h3", null, `${data.aktivKlasse} – faglige observasjoner ${per}`));
+        if (!oppf.length) { boks.append(el("p", "hjelp", "Ingen registreringer i perioden.")); return; }
+        const tab = el("table", "logg-tabell");
+        const hode = el("tr"); hode.append(el("th", null, "Elev"));
+        brukteKat.forEach(kt => { const th = el("th", null, kt.split(" ")[0]); th.title = kt; hode.append(th); });
+        hode.append(el("th", null, "Sum"));
+        tab.append(hode);
+        const rader = sorter(k.elever).map(n => {
+            const mine = oppf.filter(e => e.elev === n);
+            return { n, tall: brukteKat.map(kt => mine.filter(e => e.kat === kt).length), sum: mine.length };
+        });
+        const snitt = rader.reduce((s, r) => s + r.sum, 0) / Math.max(1, rader.length);
+        rader.forEach(r => {
+            const tr = el("tr");
+            const navnTd = el("td"); const lenke = el("button", "lenke", r.n); lenke.type = "button";
+            lenke.addEventListener("click", () => { loggTilstand.elev = r.n; tegnLogg(); });
+            navnTd.append(lenke); tr.append(navnTd);
+            r.tall.forEach(t => tr.append(el("td", t ? "" : "null", t ? String(t) : "–")));
+            tr.append(el("td", "sum" + (r.sum < snitt * 0.4 ? " lav" : ""), String(r.sum)));
+            tab.append(tr);
+        });
+        boks.append(tab);
+        boks.append(el("p", "hjelp", `Forklaring: ${brukteKat.join(" · ")}. Oransje sum = under 40 % av snittet i klassen (${snitt.toFixed(1).replace(".", ",")}).`));
+        return;
+    }
+    const mine = oppf.filter(e => e.elev === elev);
+    boks.append(el("h3", null, `${elev} – faglige observasjoner ${per}`));
+    boks.append(el("p", "hjelp", `${data.aktivKlasse} · ${mine.length} registreringer`));
+    const kortet = el("div", "logg-sammendrag");
+    brukteKat.forEach(kt => {
+        const c = mine.filter(e => e.kat === kt).length;
+        const r = el("div", "stat-linje enkel"); r.append(el("span", "stat-tekst", kt), el("b", null, String(c)));
+        kortet.append(r);
+    });
+    boks.append(kortet);
+    boks.append(el("h4", null, "Tidslinje"));
+    if (!mine.length) boks.append(el("p", "hjelp", "Ingen registreringer i perioden."));
+    mine.forEach(e => {
+        const l = el("div", "logg-linje");
+        l.append(el("span", "logg-dato", `${formaterDato(e.dato)} ${e.tid || ""}`), el("span", null, e.kat + (e.notat ? " – " + e.notat : "")));
+        boks.append(l);
+    });
+}
+function skrivUtLogg(elev) {
+    const k = klasse(), ut = $("loggUtskrift");
+    ut.innerHTML = "";
+    const oppf = loggOppforinger(data.aktivKlasse);
+    const brukteKat = unike([...logg.kategorier, ...oppf.map(e => e.kat)]);
+    const elever = elev ? [elev] : [""];
+    elever.forEach(n => { const b = el("div", "logg-rapport"); byggRapport(b, k, oppf, brukteKat, n); ut.append(b); });
+    ut.append(el("p", "hjelp", "Utskrevet " + formaterDato(idag()) + " fra Klassekart – lærerlogg. Inneholder vurderingsinformasjon; oppbevares som annen elevdokumentasjon."));
+    document.body.classList.add("skriver-logg");
+    const ferdig = () => { document.body.classList.remove("skriver-logg"); ut.innerHTML = ""; window.removeEventListener("afterprint", ferdig); };
+    window.addEventListener("afterprint", ferdig);
+    window.print();
+    setTimeout(ferdig, 1500);
+}
+// Navnebytte og klassebytte følger med inn i loggen
+function loggByttElev(klassenavn, gammelt, nytt) {
+    for (const e of logg.klasser[klassenavn] || []) if (e.elev === gammelt) e.elev = nytt;
+    lagreLogg();
+}
+function loggByttKlasse(gammelt, nytt) {
+    if (!logg.klasser[gammelt]) return;
+    logg.klasser[nytt] = (logg.klasser[nytt] || []).concat(logg.klasser[gammelt]);
+    delete logg.klasser[gammelt];
+    lagreLogg();
+}
+
+$("loggLukk").addEventListener("click", lukkLogg);
+document.addEventListener("keydown", e => {
+    if (!$("loggVindu").hidden && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); lukkLogg(); return; }
+    if (e.altKey && (e.key === "l" || e.key === "L") && $("loggVindu").hidden) { e.preventDefault(); aapneLogg(); }
+}, true);
+$("loggVindu").addEventListener("pointerdown", () => { if (loggApen) loggAktivitet(); });
+$("loggVindu").addEventListener("keydown", () => { if (loggApen) loggAktivitet(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && !$("loggVindu").hidden) lukkLogg(); });
 
 </script>
 </body>
