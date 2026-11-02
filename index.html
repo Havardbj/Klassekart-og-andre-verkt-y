@@ -298,9 +298,12 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .logg-panel h3{margin:0;font-size:19px}
 .logg-panel h4{margin:8px 0 0;font-size:13.5px}
 .logg-notat{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;width:100%}
-.logg-kat{display:grid;grid-template-columns:1fr;gap:6px}
-.logg-kat .knapp{justify-content:flex-start;text-align:left;padding:10px 12px;font-size:14.5px;background:#fff}
-.logg-kat .knapp:hover{background:#ecfdf5;border-color:#86efac}
+.logg-kat{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.logg-katknapp{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:14px 6px 12px;border:2px solid;border-radius:14px;cursor:pointer;font:inherit;transition:transform .08s,box-shadow .15s}
+.logg-katknapp:hover{box-shadow:0 4px 12px rgba(0,0,0,.12);transform:translateY(-1px)}
+.logg-katknapp:active{transform:scale(.96)}
+.logg-katknapp .ikon{font-size:30px;line-height:1}
+.logg-katknapp .tekst{font-size:14.5px;font-weight:700;color:#1f2937;text-align:center;line-height:1.2}
 .logg-linje{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid #eef0f3}
 .logg-linje .logg-dato{color:var(--muted);white-space:nowrap;font-size:12px}
 .logg-rapport{overflow:auto;display:flex;flex-direction:column;gap:6px}
@@ -309,6 +312,8 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .logg-tabell th,.logg-tabell td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:center}
 .logg-tabell th:first-child,.logg-tabell td:first-child{text-align:left}
 .logg-tabell td.null{color:#cbd5e1}
+.logg-kolhode .ikon{display:block;font-size:18px}
+.logg-kolhode small{display:block;font-size:11px;font-weight:600;color:#475569;line-height:1.1}
 .logg-tabell td.sum{font-weight:800}
 .logg-tabell td.sum.lav{color:#c2410c}
 .logg-sammendrag{border:1px solid var(--line);border-radius:10px;padding:8px 12px;max-width:520px}
@@ -1040,7 +1045,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.7.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.7.3</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -5547,13 +5552,23 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("statVi
 // (ikke i vanlig backup med mindre man velger det) og vises aldri i kart, grupper, hjul eller tavle.
 const LOGG_LAGRING = "klassekart_logg";
 const LOGG_PIN = "klassekart_logg_pin";
-const STANDARD_LOGGKAT = ["💡 God faglig refleksjon", "🗣️ Forklarer og argumenterer faglig", "❓ Stiller gode faglige spørsmål",
+const STANDARD_LOGGKAT = ["🗣️ Muntlig", "✍️ Skriftlig", "🤝 Hjelper andre", "💡 Forståelse", "🔧 Praktisk"];
+const GAMLE_LOGGKAT = ["💡 God faglig refleksjon", "🗣️ Forklarer og argumenterer faglig", "❓ Stiller gode faglige spørsmål",
     "🧩 Løser oppgaver selvstendig", "🤝 Hjelper andre faglig", "🎯 Viser god forståelse"];
+const LOGG_FARGER = ["#dbeafe", "#ede9fe", "#dcfce7", "#fef3c7", "#ffedd5", "#fce7f3", "#cffafe", "#e0e7ff"];
+const LOGG_KANT = ["#93c5fd", "#c4b5fd", "#86efac", "#fcd34d", "#fdba74", "#f9a8d4", "#67e8f9", "#a5b4fc"];
+// Deler «🗣️ Muntlig» i ikon og tekst
+function delKategori(kt) {
+    const m = String(kt).match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);
+    return m ? { ikon: m[1], tekst: m[2] || kt } : { ikon: "⭐", tekst: kt };
+}
 let logg = { kategorier: [...STANDARD_LOGGKAT], klasser: {} };
 try {
     const l = JSON.parse(localStorage.getItem(LOGG_LAGRING) || "null");
     if (l && typeof l === "object") {
         if (Array.isArray(l.kategorier) && l.kategorier.length) logg.kategorier = l.kategorier.map(String).slice(0, 20);
+        // De første standardkategoriene var for like hverandre – bytt til de nye hvis de ikke er endret
+        if (logg.kategorier.join("|") === GAMLE_LOGGKAT.join("|")) logg.kategorier = [...STANDARD_LOGGKAT];
         if (l.klasser && typeof l.klasser === "object") logg.klasser = l.klasser;
     }
 } catch (e) { /* tom logg */ }
@@ -5709,11 +5724,14 @@ function tegnLoggRegistrer(inn, k) {
     } else {
         const n = loggTilstand.elev;
         panel.append(el("h3", null, n));
-        const notat = el("input", "logg-notat"); notat.type = "text"; notat.maxLength = 140; notat.placeholder = "Kort notat (valgfritt) – skriv før du trykker kategori";
+        const notat = el("input", "logg-notat"); notat.type = "text"; notat.maxLength = 140; notat.placeholder = "Notat (valgfritt), f.eks. «forklarte Ohms lov»";
         panel.append(notat);
         const kat = el("div", "logg-kat");
-        logg.kategorier.forEach(kt => {
-            const b = el("button", "knapp", kt); b.type = "button";
+        logg.kategorier.forEach((kt, ki) => {
+            const { ikon, tekst } = delKategori(kt);
+            const b = el("button", "logg-katknapp"); b.type = "button"; b.title = kt;
+            b.style.background = LOGG_FARGER[ki % LOGG_FARGER.length]; b.style.borderColor = LOGG_KANT[ki % LOGG_KANT.length];
+            b.append(el("span", "ikon", ikon), el("span", "tekst", tekst));
             b.addEventListener("click", () => {
                 const naa = new Date();
                 loggFor(data.aktivKlasse).unshift({ id: Date.now() + Math.random(), dato: idag(), tid: naa.toTimeString().slice(0, 5), elev: n, kat: kt, notat: notat.value.trim() });
@@ -5726,7 +5744,7 @@ function tegnLoggRegistrer(inn, k) {
         panel.append(kat);
         const endre = el("button", "lenke", "✏️ Endre kategorier"); endre.type = "button";
         endre.addEventListener("click", async () => {
-            const svar = await spor("Kategorier, skilt med komma:", logg.kategorier.join(", "));
+            const svar = await spor("Kategorier skilt med komma. Start hver med et ikon, f.eks. «🧪 Forsøk»:", logg.kategorier.join(", "));
             if (svar == null) return;
             const liste = unike(svar.split(",").map(x => x.trim()).filter(Boolean)).slice(0, 20);
             if (liste.length) { logg.kategorier = liste; lagreLogg(); tegnLogg(); }
@@ -5772,7 +5790,7 @@ function byggRapport(boks, k, oppf, brukteKat, elev) {
         if (!oppf.length) { boks.append(el("p", "hjelp", "Ingen registreringer i perioden.")); return; }
         const tab = el("table", "logg-tabell");
         const hode = el("tr"); hode.append(el("th", null, "Elev"));
-        brukteKat.forEach(kt => { const th = el("th", null, kt.split(" ")[0]); th.title = kt; hode.append(th); });
+        brukteKat.forEach(kt => { const d = delKategori(kt), th = el("th", "logg-kolhode"); th.append(el("span", "ikon", d.ikon), el("small", null, d.tekst)); th.title = kt; hode.append(th); });
         hode.append(el("th", null, "Sum"));
         tab.append(hode);
         const rader = sorter(k.elever).map(n => {
@@ -5952,7 +5970,38 @@ async function skrivTilMappe(spoer) {
     registrerBackup();
     return "ok";
 }
-async function sjekkAutoBackup() {
+// PC med støtte for mappe: spør én gang om automatisk backup til en mappe
+async function velgBackupMappe() {
+    try {
+        const mappe = await window.showDirectoryPicker({ id: "klassekart", mode: "readwrite" });
+        await idb("lagre", mappe); auto.mappeNavn = mappe.name; auto.modus = "mappe"; lagreAuto();
+        const r = await skrivTilMappe(true);
+        visToast(r === "ok" ? `💾 Automatisk backup er på. Første backup er lagret i «${mappe.name}».` : "Fikk ikke skrive til mappen.");
+        return r === "ok";
+    } catch (e) { return false; }
+}
+function spoerOmMappe() {
+    let spurt = false; try { spurt = !!localStorage.getItem("klassekart_mappe_spurt"); } catch (e) { }
+    if (spurt || auto.modus === "mappe" || !kanVelgeMappe() || erMobilApp() || !Object.keys(data.klasser).length) return false;
+    try { localStorage.setItem("klassekart_mappe_spurt", "1"); } catch (e) { }
+    const b = $("backupPaaminnelse");
+    b.innerHTML = "";
+    const t = el("div", "bp-tekst");
+    t.append(el("b", null, "💾 Automatisk backup?"), el("span", null, " Velg en mappe, gjerne i skolens OneDrive, så tar Klassekart backup dit av seg selv. Du kan endre dette under ⋯ → Automatisk backup."));
+    const knapper = el("div", "installer-knapper");
+    const nei = el("button", "knapp", "Ikke nå"); nei.type = "button"; nei.addEventListener("click", skjulBackupPaaminnelse);
+    const ja = el("button", "knapp primar", "Velg mappe …"); ja.type = "button";
+    ja.addEventListener("click", async () => { skjulBackupPaaminnelse(); await velgBackupMappe(); });
+    knapper.append(nei, ja);
+    b.append(t, knapper);
+    b.hidden = false;
+    return true;
+}
+async function sjekkAutoBackup(forsok = 0) {
+    // Vent til velkomstvinduet, installer-forslaget og andre vinduer er lukket
+    const opptatt = !$("info").hidden || ($("installer") && !$("installer").hidden) || !$("dialog").hidden || (typeof mArk !== "undefined" && mArk) || !$("pdfVindu").hidden;
+    if (opptatt) { if (forsok < 60) setTimeout(() => sjekkAutoBackup(forsok + 1).catch(() => { }), 5000); return; }
+    if (spoerOmMappe()) return;
     if (!auto.sist) { auto.sist = new Date().toISOString(); auto.apninger = 0; lagreAuto(); return; }   // første gang: begynn å telle
     auto.apninger = (auto.apninger || 0) + 1; lagreAuto();
     if (!backupForfaller() || !Object.keys(data.klasser).length) return;
