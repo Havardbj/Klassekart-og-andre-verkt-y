@@ -317,6 +317,42 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .logg-tabell td.sum{font-weight:800}
 .logg-tabell td.sum.lav{color:#c2410c}
 .logg-sammendrag{border:1px solid var(--line);border-radius:10px;padding:8px 12px;max-width:520px}
+.diagram-rad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:12px}
+.diagram-kort{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;display:flex;flex-direction:column;gap:6px;min-width:0}
+.diagram-kort h4{margin:0;font-size:14px}
+.smultring-rad{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.smultring-tall{font-size:26px;font-weight:800;fill:#1f2937}
+.smultring-under{font-size:10px;fill:#64748b}
+.forklaring{display:flex;flex-direction:column;gap:4px;font-size:13px;min-width:0;flex:1}
+.forklaring.vannrett{flex-direction:row;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:#475569}
+.forklaring-linje{display:flex;align-items:center;gap:6px}
+.forklaring-linje.tom{opacity:.45}
+.forklaring-linje .f-navn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.forklaring-linje small{color:#64748b;min-width:34px;text-align:right}
+.prikk{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.strek{width:18px;border-top:2px solid;display:inline-block}
+.strek.stiplet{border-top-style:dashed}
+.linje-svg{width:100%;height:auto;display:block}
+.linje-svg .rutenett{stroke:#eef0f3;stroke-width:1}
+.linje-svg .akse{stroke:#cbd5e1;stroke-width:1}
+.linje-svg .akse-tekst{font-size:10.5px;fill:#64748b}
+.bidrag-hode{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pdf-seg.liten button{padding:4px 9px;font-size:12.5px}
+.bidrag-liste{display:flex;flex-direction:column;gap:3px}
+.bidrag-rad{display:grid;grid-template-columns:minmax(80px,140px) 1fr 42px;gap:8px;align-items:center}
+.bidrag-navn{text-align:left;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bidrag-stolpe{display:flex;gap:2px;height:14px;align-items:stretch}
+.bidrag-stolpe span{border-radius:3px;min-width:3px}
+.bidrag-sum{font-size:12.5px;font-weight:800;text-align:center;border-radius:999px;padding:2px 6px}
+.bidrag-sum.lav2{background:#fdba74;color:#7c2d12}
+.bidrag-sum.lav1{background:#ffedd5;color:#9a3412}
+.bidrag-sum.midt{background:#f1f5f9;color:#334155}
+.bidrag-sum.hoy1{background:#dbeafe;color:#1e40af}
+.bidrag-sum.hoy2{background:#93c5fd;color:#1e3a8a}
+.bidrag-skala{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.bidrag-skala .bidrag-sum{font-weight:600;font-size:11.5px}
+body.mobil .diagram-rad{grid-template-columns:1fr}
+@media print{body.skriver-logg .diagram-kort{break-inside:avoid}body.skriver-logg .pdf-seg{display:none}}
 #loggUtskrift{display:none}
 .gjenkode{font:700 28px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.12em;background:#f1f5f9;border:2px dashed #94a3b8;border-radius:12px;padding:12px 18px;user-select:all}
 .backup-dialog{width:min(560px,100%)}
@@ -820,6 +856,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <p class="hjelp" id="elevHjelp">Ett navn per linje. Endringer lagres automatisk.</p>
                 <button type="button" class="knapp pdf-knapp" id="btnPdfElever">📄 Hent navn og bilder fra klasseliste (PDF)</button>
                 <div class="bilde-linje" id="bildeLinje" hidden><span id="bildeAntall"></span><button type="button" class="lenke" id="btnSlettBilder">Slett alle bilder</button></div>
+                <div class="bilde-linje"><span id="backupStatus">💾 Backup</span><button type="button" class="lenke" id="btnBackupInnst">Automatisk backup …</button></div>
                 <p class="bilde-tips" id="bildeTips" hidden>💡 Hent PDF-en på nytt for å få med mer av bildene (mindre zoom).</p>
             </div>
             <hr class="skille">
@@ -1045,7 +1082,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.7.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.7.4</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1789,6 +1826,10 @@ function tegnElevfane() {
     $("bildeLinje").hidden = !nb;
     $("bildeAntall").textContent = `📷 ${nb} ${nb === 1 ? "elev har" : "elever har"} bilde`;
     $("bildeTips").hidden = !(nb && (k.bildeUtsnitt === 2 || k.bildeUtsnitt === 3));
+    try {
+        $("backupStatus").textContent = auto.modus === "mappe" ? `💾 Automatisk backup til «${auto.mappeNavn}»` + (auto.sist ? ` · sist ${formaterDato(auto.sist.slice(0, 10)).replace(/^\S+ /, "")}` : "")
+            : auto.modus === "av" ? "💾 Automatisk backup er av" : "💾 Backup: påminnelse" + (auto.sist ? ` · sist ${formaterDato(auto.sist.slice(0, 10)).replace(/^\S+ /, "")}` : "");
+    } catch (e) { }
 }
 
 function settFravaer(navn, borte) {
@@ -5322,6 +5363,7 @@ $("pdfFil").addEventListener("change", function () {
 $("pdfLukk").addEventListener("click", lukkPdf);
 $("btnPdfElever").addEventListener("click", () => handlinger.importerPdf());
 $("btnSlettBilder").addEventListener("click", slettAlleBilder);
+$("btnBackupInnst").addEventListener("click", () => visBackupInnstillinger());
 $("pdfVindu").addEventListener("click", e => { if (e.target === $("pdfVindu")) lukkPdf(); });
 
 // ================= Samarbeid og statistikk =================
@@ -5555,8 +5597,9 @@ const LOGG_PIN = "klassekart_logg_pin";
 const STANDARD_LOGGKAT = ["🗣️ Muntlig", "✍️ Skriftlig", "🤝 Hjelper andre", "💡 Forståelse", "🔧 Praktisk"];
 const GAMLE_LOGGKAT = ["💡 God faglig refleksjon", "🗣️ Forklarer og argumenterer faglig", "❓ Stiller gode faglige spørsmål",
     "🧩 Løser oppgaver selvstendig", "🤝 Hjelper andre faglig", "🎯 Viser god forståelse"];
-const LOGG_FARGER = ["#dbeafe", "#ede9fe", "#dcfce7", "#fef3c7", "#ffedd5", "#fce7f3", "#cffafe", "#e0e7ff"];
-const LOGG_KANT = ["#93c5fd", "#c4b5fd", "#86efac", "#fcd34d", "#fdba74", "#f9a8d4", "#67e8f9", "#a5b4fc"];
+// Samme rekkefølge som fargene i rapportens diagrammer
+const LOGG_KANT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+const LOGG_FARGER = LOGG_KANT.map(f => f + "22");
 // Deler «🗣️ Muntlig» i ikon og tekst
 function delKategori(kt) {
     const m = String(kt).match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);
@@ -5656,7 +5699,7 @@ function tegnPin(modus, forste) {
 }
 
 // ---------- Registrering ----------
-const loggTilstand = { fane: "registrer", elev: "", periode: "termin", sortering: "navn" };
+const loggTilstand = { fane: "registrer", elev: "", periode: "termin", sortering: "mest" };
 function loggPeriodeStart() {
     const d = new Date(), m = d.getMonth();
     if (loggTilstand.periode === "termin") { if (m >= 7) d.setMonth(7, 1); else d.setMonth(0, 1); }
@@ -5783,52 +5826,196 @@ function tegnLoggRapport(inn, k) {
     byggRapport(boks, k, oppf, brukteKat, rapportElev);
     inn.append(boks);
 }
+// ---------- Diagrammer til lærerlogg-rapporten (SVG, ingen biblioteker) ----------
+const SERIE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+const SVGNS = "http://www.w3.org/2000/svg";
+const svgEl = (tag, attr = {}) => { const e = document.createElementNS(SVGNS, tag); for (const k in attr) e.setAttribute(k, attr[k]); return e; };
+const katFarge = kt => { const i = logg.kategorier.indexOf(kt); return i > -1 ? SERIE[i % SERIE.length] : "#94a3b8"; };
+function ukeNr(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dag = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dag);
+    const start = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return { aar: t.getUTCFullYear(), uke: Math.ceil(((t - start) / 864e5 + 1) / 7) };
+}
+// Uker fra periodestart (eller første registrering) til i dag
+function ukerIPerioden(oppf) {
+    let fra = loggPeriodeStart();
+    if (!fra) fra = oppf.length ? oppf.reduce((m, e) => e.dato < m ? e.dato : m, idag()) : idag();
+    const d = new Date(fra + "T12:00:00"), slutt = new Date(idag() + "T12:00:00");
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // til mandag
+    const uker = [];
+    while (d <= slutt && uker.length < 60) { const u = ukeNr(d); uker.push({ nokkel: u.aar + "-" + u.uke, etikett: "uke " + u.uke }); d.setDate(d.getDate() + 7); }
+    return uker;
+}
+const ukeNokkel = dato => { const u = ukeNr(new Date(dato + "T12:00:00")); return u.aar + "-" + u.uke; };
+
+// Smultring med fordeling mellom kategoriene
+function smultring(deler, tittel) {
+    const total = deler.reduce((s, d) => s + d.verdi, 0);
+    const boks = el("div", "diagram-kort");
+    boks.append(el("h4", null, tittel));
+    if (!total) { boks.append(el("p", "hjelp", "Ingen registreringer.")); return boks; }
+    const rad = el("div", "smultring-rad");
+    const S = 150, R = 66, r = 42, c = S / 2;
+    const svg = svgEl("svg", { viewBox: `0 0 ${S} ${S}`, width: S, height: S, role: "img", "aria-label": tittel });
+    let a0 = -Math.PI / 2;
+    for (const d of deler) {
+        if (!d.verdi) continue;
+        const v = d.verdi / total * Math.PI * 2, a1 = a0 + v;
+        let path;
+        if (d.verdi === total) {
+            path = svgEl("path", { d: `M${c},${c - R} A${R},${R} 0 1,1 ${c - 0.01},${c - R} L${c - 0.01},${c - r} A${r},${r} 0 1,0 ${c},${c - r} Z` });
+        } else {
+            const p = (rad, a) => `${(c + rad * Math.cos(a)).toFixed(2)},${(c + rad * Math.sin(a)).toFixed(2)}`;
+            const stor = v > Math.PI ? 1 : 0;
+            path = svgEl("path", { d: `M${p(R, a0)} A${R},${R} 0 ${stor},1 ${p(R, a1)} L${p(r, a1)} A${r},${r} 0 ${stor},0 ${p(r, a0)} Z` });
+        }
+        path.setAttribute("fill", d.farge); path.setAttribute("stroke", "#fff"); path.setAttribute("stroke-width", "2");
+        const t = svgEl("title"); t.textContent = `${d.navn}: ${d.verdi} (${Math.round(d.verdi / total * 100)} %)`; path.append(t);
+        svg.append(path);
+        a0 = a1;
+    }
+    const tall = svgEl("text", { x: c, y: c + 2, "text-anchor": "middle", "dominant-baseline": "middle", class: "smultring-tall" }); tall.textContent = total;
+    const under = svgEl("text", { x: c, y: c + 20, "text-anchor": "middle", class: "smultring-under" }); under.textContent = "registreringer";
+    svg.append(tall, under);
+    const forklaring = el("div", "forklaring");
+    for (const d of deler) {
+        const l = el("div", "forklaring-linje" + (d.verdi ? "" : " tom"));
+        const prikk = el("span", "prikk"); prikk.style.background = d.farge;
+        l.append(prikk, el("span", "f-navn", d.navn), el("b", null, String(d.verdi)), el("small", null, total ? Math.round(d.verdi / total * 100) + " %" : ""));
+        forklaring.append(l);
+    }
+    rad.append(svg, forklaring);
+    boks.append(rad);
+    return boks;
+}
+// Linjediagram per uke. serier: [{navn, verdier, farge, stiplet}]
+function ukeLinje(uker, serier, tittel) {
+    const boks = el("div", "diagram-kort");
+    boks.append(el("h4", null, tittel));
+    if (uker.length < 2) { boks.append(el("p", "hjelp", "For kort periode til å vise utvikling – velg en lengre periode.")); return boks; }
+    const W = 560, H = 190, V = 34, Hm = 12, T = 10, B = 26;
+    const maks = Math.max(1, ...serier.flatMap(s => s.verdier));
+    const steg = maks <= 4 ? 1 : maks <= 10 ? 2 : Math.ceil(maks / 5);
+    const topp = Math.ceil(maks / steg) * steg;
+    const x = i => V + (W - V - Hm) * (uker.length === 1 ? 0.5 : i / (uker.length - 1));
+    const y = v => T + (H - T - B) * (1 - v / topp);
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, class: "linje-svg", role: "img", "aria-label": tittel });
+    for (let v = 0; v <= topp; v += steg) {
+        svg.append(svgEl("line", { x1: V, x2: W - Hm, y1: y(v), y2: y(v), class: v ? "rutenett" : "akse" }));
+        const t = svgEl("text", { x: V - 6, y: y(v) + 4, "text-anchor": "end", class: "akse-tekst" }); t.textContent = v; svg.append(t);
+    }
+    const hvert = Math.ceil(uker.length / 8);
+    uker.forEach((u, i) => {
+        if (i % hvert && i !== uker.length - 1) return;
+        const siste = i === uker.length - 1;
+        const t = svgEl("text", { x: x(i), y: H - 8, "text-anchor": i === 0 ? "start" : siste ? "end" : "middle", class: "akse-tekst" });
+        t.textContent = siste ? "denne uka" : u.etikett; svg.append(t);
+    });
+    for (const s of serier) {
+        const d = s.verdier.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+        svg.append(svgEl("path", { d, fill: "none", stroke: s.farge, "stroke-width": 2, "stroke-linejoin": "round", "stroke-dasharray": s.stiplet ? "5 4" : "" }));
+        s.verdier.forEach((v, i) => {
+            const g = svgEl("g");
+            const treff = svgEl("circle", { cx: x(i), cy: y(v), r: 10, fill: "transparent" });
+            const p = svgEl("circle", { cx: x(i), cy: y(v), r: s.stiplet ? 0 : 3.5, fill: s.farge, stroke: "#fff", "stroke-width": 1.5 });
+            const t = svgEl("title"); t.textContent = `${uker[i].etikett}: ${typeof v === "number" ? (Math.round(v * 10) / 10).toString().replace(".", ",") : v} ${s.navn ? "(" + s.navn + ")" : ""}`;
+            g.append(treff, p, t); svg.append(g);
+        });
+    }
+    boks.append(svg);
+    if (serier.length > 1) {
+        const f = el("div", "forklaring vannrett");
+        serier.forEach(s => { const l = el("div", "forklaring-linje"); const st = el("span", "strek" + (s.stiplet ? " stiplet" : "")); st.style.borderColor = s.farge; l.append(st, el("span", null, s.navn)); f.append(l); });
+        boks.append(f);
+    }
+    return boks;
+}
+// Bidrag per elev: stablet stolpe per elev, sortert, med fargekodet sum (under/over snittet)
+function bidragListe(k, oppf, brukteKat, sortering, vedKlikk) {
+    const boks = el("div", "diagram-kort");
+    const hode = el("div", "bidrag-hode");
+    hode.append(el("h4", null, "Bidrag per elev"));
+    const seg = el("div", "pdf-seg liten");
+    for (const [v, t] of [["mest", "Mest først"], ["minst", "Minst først"], ["navn", "Navn"]]) {
+        const b = el("button", sortering === v ? "valgt" : "", t); b.type = "button";
+        b.addEventListener("click", () => { loggTilstand.sortering = v; tegnLogg(); });
+        seg.append(b);
+    }
+    hode.append(seg);
+    boks.append(hode);
+    const rader = k.elever.map(n => {
+        const mine = oppf.filter(e => e.elev === n);
+        return { n, deler: brukteKat.map(kt => ({ kt, v: mine.filter(e => e.kat === kt).length })), sum: mine.length };
+    });
+    const snitt = rader.reduce((s, r) => s + r.sum, 0) / Math.max(1, rader.length);
+    const maks = Math.max(1, ...rader.map(r => r.sum));
+    if (sortering === "mest") rader.sort((a, b) => b.sum - a.sum || a.n.localeCompare(b.n, "no"));
+    else if (sortering === "minst") rader.sort((a, b) => a.sum - b.sum || a.n.localeCompare(b.n, "no"));
+    else rader.sort((a, b) => a.n.localeCompare(b.n, "no"));
+    const liste = el("div", "bidrag-liste");
+    for (const r of rader) {
+        const rad = el("div", "bidrag-rad");
+        const navn = el("button", "lenke bidrag-navn", r.n); navn.type = "button";
+        navn.addEventListener("click", () => vedKlikk(r.n));
+        const stolpe = el("div", "bidrag-stolpe");
+        r.deler.forEach(d => {
+            if (!d.v) return;
+            const s = el("span"); s.style.width = (d.v / maks * 100) + "%"; s.style.background = katFarge(d.kt); s.title = `${d.kt}: ${d.v}`;
+            stolpe.append(s);
+        });
+        // Under/over snittet: oransje – grå – blå
+        const forhold = snitt ? r.sum / snitt : 1;
+        const niva = forhold < 0.5 ? "lav2" : forhold < 0.85 ? "lav1" : forhold <= 1.15 ? "midt" : forhold <= 1.6 ? "hoy1" : "hoy2";
+        const sum = el("span", "bidrag-sum " + niva, String(r.sum));
+        sum.title = `${r.sum} registreringer (snitt ${snitt.toFixed(1).replace(".", ",")})`;
+        rad.append(navn, stolpe, sum);
+        liste.append(rad);
+    }
+    boks.append(liste);
+    const tegnf = el("div", "forklaring vannrett");
+    brukteKat.forEach(kt => { const l = el("div", "forklaring-linje"); const p = el("span", "prikk"); p.style.background = katFarge(kt); l.append(p, el("span", null, delKategori(kt).tekst)); tegnf.append(l); });
+    boks.append(tegnf);
+    const skala = el("div", "bidrag-skala");
+    skala.append(el("span", "bidrag-sum lav2", "under halvparten av snittet"), el("span", "bidrag-sum lav1", "under snittet"), el("span", "bidrag-sum midt", "rundt snittet"), el("span", "bidrag-sum hoy1", "over snittet"), el("span", "bidrag-sum hoy2", "langt over"));
+    boks.append(skala);
+    return boks;
+}
 function byggRapport(boks, k, oppf, brukteKat, elev) {
     const per = { termin: "denne terminen", aar: "dette skoleåret", "4u": "de siste 4 ukene", alt: "hele perioden" }[loggTilstand.periode];
+    const uker = ukerIPerioden(oppf);
+    const perUke = liste => { const m = {}; liste.forEach(e => { const n = ukeNokkel(e.dato); m[n] = (m[n] || 0) + 1; }); return uker.map(u => m[u.nokkel] || 0); };
+    const fordeling = liste => brukteKat.map(kt => ({ navn: delKategori(kt).ikon + " " + delKategori(kt).tekst, verdi: liste.filter(e => e.kat === kt).length, farge: katFarge(kt) }));
     if (!elev) {
         boks.append(el("h3", null, `${data.aktivKlasse} – faglige observasjoner ${per}`));
         if (!oppf.length) { boks.append(el("p", "hjelp", "Ingen registreringer i perioden.")); return; }
-        const tab = el("table", "logg-tabell");
-        const hode = el("tr"); hode.append(el("th", null, "Elev"));
-        brukteKat.forEach(kt => { const d = delKategori(kt), th = el("th", "logg-kolhode"); th.append(el("span", "ikon", d.ikon), el("small", null, d.tekst)); th.title = kt; hode.append(th); });
-        hode.append(el("th", null, "Sum"));
-        tab.append(hode);
-        const rader = sorter(k.elever).map(n => {
-            const mine = oppf.filter(e => e.elev === n);
-            return { n, tall: brukteKat.map(kt => mine.filter(e => e.kat === kt).length), sum: mine.length };
-        });
-        const snitt = rader.reduce((s, r) => s + r.sum, 0) / Math.max(1, rader.length);
-        rader.forEach(r => {
-            const tr = el("tr");
-            const navnTd = el("td"); const lenke = el("button", "lenke", r.n); lenke.type = "button";
-            lenke.addEventListener("click", () => { loggTilstand.elev = r.n; tegnLogg(); });
-            navnTd.append(lenke); tr.append(navnTd);
-            r.tall.forEach(t => tr.append(el("td", t ? "" : "null", t ? String(t) : "–")));
-            tr.append(el("td", "sum" + (r.sum < snitt * 0.4 ? " lav" : ""), String(r.sum)));
-            tab.append(tr);
-        });
-        boks.append(tab);
-        boks.append(el("p", "hjelp", `Forklaring: ${brukteKat.join(" · ")}. Oransje sum = under 40 % av snittet i klassen (${snitt.toFixed(1).replace(".", ",")}).`));
+        const rad = el("div", "diagram-rad");
+        rad.append(smultring(fordeling(oppf), "Fordeling mellom kategoriene"),
+            ukeLinje(uker, [{ navn: "", verdier: perUke(oppf), farge: SERIE[0] }], "Registreringer per uke (hele klassen)"));
+        boks.append(rad);
+        boks.append(bidragListe(k, oppf, brukteKat, loggTilstand.sortering || "mest", n => { loggTilstand.elev = n; tegnLogg(); }));
         return;
     }
     const mine = oppf.filter(e => e.elev === elev);
+    const snittPerUke = perUke(oppf).map(v => v / Math.max(1, k.elever.length));
     boks.append(el("h3", null, `${elev} – faglige observasjoner ${per}`));
-    boks.append(el("p", "hjelp", `${data.aktivKlasse} · ${mine.length} registreringer`));
-    const kortet = el("div", "logg-sammendrag");
-    brukteKat.forEach(kt => {
-        const c = mine.filter(e => e.kat === kt).length;
-        const r = el("div", "stat-linje enkel"); r.append(el("span", "stat-tekst", kt), el("b", null, String(c)));
-        kortet.append(r);
-    });
-    boks.append(kortet);
+    const snitt = oppf.length / Math.max(1, k.elever.length);
+    boks.append(el("p", "hjelp", `${data.aktivKlasse} · ${mine.length} registreringer (snitt i klassen ${snitt.toFixed(1).replace(".", ",")})`));
+    const rad = el("div", "diagram-rad");
+    rad.append(smultring(fordeling(mine), "Fordeling mellom kategoriene"),
+        ukeLinje(uker, [{ navn: elev, verdier: perUke(mine), farge: SERIE[0] }, { navn: "Snitt i klassen", verdier: snittPerUke, farge: "#94a3b8", stiplet: true }], "Registreringer per uke"));
+    boks.append(rad);
     boks.append(el("h4", null, "Tidslinje"));
     if (!mine.length) boks.append(el("p", "hjelp", "Ingen registreringer i perioden."));
     mine.forEach(e => {
         const l = el("div", "logg-linje");
-        l.append(el("span", "logg-dato", `${formaterDato(e.dato)} ${e.tid || ""}`), el("span", null, e.kat + (e.notat ? " – " + e.notat : "")));
+        const p = el("span", "prikk"); p.style.background = katFarge(e.kat);
+        const tekst = el("span"); tekst.append(p, document.createTextNode(" " + e.kat + (e.notat ? " – " + e.notat : "")));
+        l.append(el("span", "logg-dato", `${formaterDato(e.dato)} ${e.tid || ""}`), tekst);
         boks.append(l);
     });
 }
+
 function skrivUtLogg(elev) {
     const k = klasse(), ut = $("loggUtskrift");
     ut.innerHTML = "";
@@ -5910,7 +6097,8 @@ async function brukGjenkode() {
 const AUTO_LAGRING = "klassekart_autobackup";
 let auto = { modus: "paaminnelse", hyppighet: "uke", bilder: true, logg: true, sist: "", apninger: 0, mappeNavn: "" };
 try { Object.assign(auto, JSON.parse(localStorage.getItem(AUTO_LAGRING) || "{}")); } catch (e) { }
-const lagreAuto = () => { try { localStorage.setItem(AUTO_LAGRING, JSON.stringify(auto)); } catch (e) { } };
+const lagreAuto = () => { try { localStorage.setItem(AUTO_LAGRING, JSON.stringify(auto)); } catch (e) { } try { if (klasse()) tegnElevfane(); } catch (e) { } };
+setTimeout(() => { try { if (klasse()) tegnElevfane(); } catch (e) { } }, 0);
 const kanVelgeMappe = () => typeof window.showDirectoryPicker === "function";
 
 // Mappehåndtaket lagres i IndexedDB (kan ikke lagres i localStorage)
