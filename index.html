@@ -261,11 +261,16 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .pdf-elev{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px}
 .pdf-elev:last-child{border-bottom:0}
 .pdf-elev small{margin-left:auto;color:var(--muted);font-size:12px;text-align:right}
+.pdf-elev b{white-space:nowrap;flex:none}
 .pdf-elev.av b{color:var(--muted);text-decoration:line-through;font-weight:400}
 .pdf-maal{display:flex;flex-direction:column;gap:8px;font-size:14px}
 .pdf-maal label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .pdf-maal .pdf-klassenavn{width:auto!important;flex:1;min-width:120px;padding:6px 9px!important;font-size:14px!important}
 .pdf-knapp{margin-top:8px;width:100%}
+.pdf-mer{align-self:flex-start;font-size:13.5px}
+.pdf-advarsel{color:var(--warn,#b45309);font-size:12.5px;margin:-4px 0 0 22px}
+.pdf-advarsel:empty{display:none}
+.pdf-klassevalg{padding:5px 8px;font-size:14px;border:1px solid var(--line);border-radius:8px;max-width:60%}
 .stat-dialog{width:min(980px,100%);max-height:calc(100dvh - 32px);gap:10px}
 .stat-innhold{overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
 .stat-valg{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -976,7 +981,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.4</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.5</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1063,7 +1068,7 @@ body.mobil .sete.ledig{font-size:.8em}
         <div class="stat-fot"><button type="button" class="lenke fare-lenke" id="statNullstill">Slett historikken for klassen</button></div>
     </div>
 </div>
-<input type="file" id="pdfFil" accept="application/pdf,.pdf" hidden>
+<input type="file" id="pdfFil" accept="application/pdf,.pdf" multiple hidden>
 <input type="file" id="bildeFil" accept="image/*" hidden>
 <div class="dialog-bak" id="pdfVindu" hidden>
     <div class="dialog pdf-dialog" role="dialog" aria-modal="true" aria-labelledby="pdfTittel">
@@ -1611,7 +1616,7 @@ const handlinger = {
         visToast("Backupen er lastet ned.");
     },
     importer() { $("importFil").click(); },
-    importerPdf() { $("pdfFil").click(); },
+    importerPdf() { pdfLeggTil = false; $("pdfFil").click(); },
     statistikk() { visStatistikk(); },
     hjelp() { visInfo("hjelp"); },
     om() { visInfo("om"); }
@@ -4890,7 +4895,7 @@ function visningsnavn(elever, format, bytt, mellomnavn) {
 }
 
 const pdfTilstand = { elever: [], valgt: [], format: "fornavn", bytt: false, mellomnavn: false, maal: "ny", klassenavn: "", filnavn: "", medBilder: true };
-function lukkPdf() { $("pdfVindu").hidden = true; }
+function lukkPdf() { $("pdfVindu").hidden = true; pdfLeggTil = false; }
 
 // Anonym feilrapport: posisjoner og struktur, men alle bokstaver i navn er byttet ut (a/A), tall blir 0
 function maskerTekst(t) {
@@ -4934,26 +4939,17 @@ function visPdfMelding(tekst, feil) {
     }
     $("pdfVindu").hidden = false;
 }
-async function importerPdfFil(fil) {
-    pdfTilstand.raa = null; pdfTilstand.elever = [];
-    visPdfMelding("📄 Leser PDF-en …");
-    try { await lastPdfJs(); }
-    catch (e) { visPdfMelding("PDF-leseren kunne ikke lastes. Åpne appen fra nettadressen (med nett første gang), så virker det.", true); return; }
+// Leser én PDF og returnerer elevene (med bilder) og foreslått klassenavn – eller en feilmelding
+async function lesEnPdf(fil) {
     let les;
     try { les = await lesPdf(await fil.arrayBuffer()); }
-    catch (e) {
-        visPdfMelding(e && e.name === "PasswordException" ? "PDF-en er passordbeskyttet. Lagre en kopi uten passord og prøv igjen." : "Klarte ikke å lese PDF-en.", true);
-        return;
-    }
+    catch (e) { return { feil: e && e.name === "PasswordException" ? `«${fil.name}» er passordbeskyttet. Lagre en kopi uten passord og prøv igjen.` : `Klarte ikke å lese «${fil.name}».` }; }
     const { linjer, sider } = les;
-    pdfTilstand.raa = les;
-    if (!linjer.length) { visPdfMelding("Fant ingen tekst i PDF-en. Den er trolig skannet som bilde. Kopier heller navnene fra Visma og lim dem inn i navnelisten.", true); return; }
+    if (!linjer.length) return { raa: les, feil: `Fant ingen tekst i «${fil.name}». Den er trolig skannet som bilde. Kopier heller navnene fra Visma og lim dem inn i navnelisten.` };
     const bildenavn = finnBildenavn(sider);
-    // Med bildeliste brukes tabellen hvis den finnes, ellers navnene under bildene
     let elever = finnNavnIPdf(linjer, bildenavn.length >= 2);
-    // Bare bildeliste (ingen navnetabell): bruk navnene under bildene
     if (elever.length < 2 && bildenavn.length >= 2) elever = ryddFunnet(bildenavn.map(b => tolkNavn(b.tokens)).filter(Boolean));
-    if (!elever.length) { visPdfMelding("Fant ingen elevnavn i PDF-en. Kopier navnene fra PDF-en og lim dem inn i navnelisten i stedet.", true); return; }
+    if (!elever.length) return { raa: les, feil: `Fant ingen elevnavn i «${fil.name}». Kopier navnene fra PDF-en og lim dem inn i navnelisten i stedet.` };
     if (bildenavn.length) {
         kobleBilder(elever, bildenavn);
         if (elever.some(e => e.foto)) {
@@ -4961,21 +4957,80 @@ async function importerPdfFil(fil) {
             try { await lagMiniatyrer(sider, elever); } catch (e) { /* uten bilder */ }
         }
     }
-    Object.assign(pdfTilstand, { elever, valgt: elever.map(() => true), format: "fornavn", bytt: false, mellomnavn: false, maal: "ny", klassenavn: finnKlassenavn(linjer, fil.name), filnavn: fil.name, medBilder: true });
-    // Står de fleste navnene allerede i klassen som er åpen? Da er det trolig en oppdatering av den
-    const ak = klasse();
-    if (ak) {
-        const vis = visningsnavn(elever, "fornavn", false, false).map(ryddNavn);
-        if (vis.filter(n => ak.elever.includes(n)).length >= Math.max(2, vis.length * 0.5)) pdfTilstand.maal = "aktiv";
+    const klassenavn = finnKlassenavn(linjer, fil.name);
+    elever.forEach(e => { e.kilde = klassenavn; delete e.foto; });
+    return { raa: les, elever, klassenavn };
+}
+let pdfLeggTil = false;   // true når neste PDF skal slås sammen med den som vises
+async function importerPdfFil(filer, leggTil) {
+    filer = Array.isArray(filer) ? filer : [filer];
+    const t = pdfTilstand;
+    if (!leggTil) { t.raa = null; t.elever = []; t.valgt = []; t.filer = []; t.klasser = []; }
+    visPdfMelding(filer.length > 1 ? `📄 Leser ${filer.length} PDF-er …` : "📄 Leser PDF-en …");
+    try { await lastPdfJs(); }
+    catch (e) { visPdfMelding("PDF-leseren kunne ikke lastes. Åpne appen fra nettadressen (med nett første gang), så virker det.", true); return; }
+    const feil = [];
+    for (const fil of filer) {
+        const r = await lesEnPdf(fil);
+        if (r.raa) t.raa = r.raa;
+        if (r.feil) { feil.push(r.feil); continue; }
+        // Slå sammen: samme fulle navn regnes som samme elev
+        for (const e of r.elever) {
+            const nk = (e.fornavn + "|" + e.etternavn).toLowerCase();
+            const fra = t.elever.findIndex(x => (x.fornavn + "|" + x.etternavn).toLowerCase() === nk);
+            if (fra > -1) { if (!t.elever[fra].bilde && e.bilde) t.elever[fra].bilde = e.bilde; continue; }
+            t.elever.push(e); t.valgt.push(true);
+        }
+        t.filer.push(fil.name);
+        if (!t.klasser.includes(r.klassenavn)) t.klasser.push(r.klassenavn);
+    }
+    if (!t.elever.length) { visPdfMelding(feil.join("\n\n") || "Fant ingen elevnavn.", true); return; }
+    t.feil = feil;
+    t.filnavn = t.filer.join(", ");
+    if (!leggTil) Object.assign(t, { format: "fornavn", bytt: false, mellomnavn: false, medBilder: true });
+    t.klassenavn = t.klasser.join(" + ");
+    // Hvor skal elevene? Finnes klassen fra før, eller står de fleste navnene i den åpne klassen, foreslås den
+    t.maal = "ny"; t.maalKlasse = data.aktivKlasse || ""; t.likeErAndre = null;
+    if (t.klasser.length === 1 && data.klasser[t.klassenavn]) { t.maal = "eksisterende"; t.maalKlasse = t.klassenavn; }
+    else {
+        const ak = klasse();
+        if (ak && t.klasser.length === 1) {
+            const vis = visningsnavn(t.elever, "fornavn", false, false).map(ryddNavn);
+            if (vis.filter(n => ak.elever.includes(n)).length >= Math.max(2, vis.length * 0.5)) { t.maal = "eksisterende"; t.maalKlasse = data.aktivKlasse; }
+        }
     }
     tegnPdfForhandsvisning();
 }
+// Ved import til en eksisterende klasse: er de fleste navnene nye (sammenslåing), er like fornavn
+// forskjellige elever – de nye får da forbokstav i etternavnet. Er de fleste kjente, er det en oppdatering.
+function pdfVisning() {
+    const t = pdfTilstand;
+    const visning = visningsnavn(t.elever, t.format, t.bytt, t.mellomnavn);
+    const status = visning.map(() => "");
+    const k = t.maal === "eksisterende" ? data.klasser[t.maalKlasse] : null;
+    if (!k) return { visning, status };
+    const kjent = visning.filter(n => k.elever.includes(ryddNavn(n))).length;
+    t.kollisjoner = kjent;
+    const oppdatering = t.likeErAndre == null ? kjent >= Math.max(2, visning.length * 0.5) : !t.likeErAndre;
+    t.erOppdatering = oppdatering;
+    visning.forEach((n, i) => {
+        if (!k.elever.includes(ryddNavn(n))) return;
+        if (oppdatering) { status[i] = "finnes fra før"; return; }
+        const e = t.elever[i], f = t.mellomnavn ? e.fornavn : e.fornavn.split(" ")[0];
+        let ny = e.etternavn ? `${f} ${e.etternavn[0]}.` : n;
+        if (k.elever.includes(ryddNavn(ny)) || visning.includes(ny)) ny = `${f} ${e.etternavn}`.trim();
+        if (ny !== n) { visning[i] = ny; status[i] = "samme fornavn finnes – får forbokstav"; }
+        else status[i] = "finnes fra før";
+    });
+    return { visning, status };
+}
 function tegnPdfForhandsvisning() {
     const t = pdfTilstand, inn = $("pdfInnhold");
-    const visning = visningsnavn(t.elever, t.format, t.bytt, t.mellomnavn);
+    const { visning, status } = pdfVisning();
     const antBilder = t.elever.filter(e => e.bilde).length;
     inn.innerHTML = "";
-    inn.append(el("p", "hjelp", `Fant ${t.elever.length} navn${antBilder ? ` og ${antBilder} bilder` : ""} i «${t.filnavn}». Kryss av for elevene som skal med. PDF-en leses bare på denne enheten.`));
+    inn.append(el("p", "hjelp", `Fant ${t.elever.length} navn${antBilder ? ` og ${antBilder} bilder` : ""} i ${t.filer.length > 1 ? t.filer.length + " PDF-er" : "«" + t.filnavn + "»"}. Kryss av for elevene som skal med. PDF-en leses bare på denne enheten.`));
+    if (t.feil && t.feil.length) inn.append(el("p", "pdf-melding feil", t.feil.join("\n")));
     // Navneformat
     const seg = el("div", "pdf-seg");
     for (const [v, tekst] of [["fornavn", "Fornavn"], ["forbokstav", "Fornavn + E."], ["full", "Fullt navn"]]) {
@@ -5020,31 +5075,50 @@ function tegnPdfForhandsvisning() {
             if (e.bilde) { const im = el("img", "pdf-foto"); im.src = e.bilde; im.alt = ""; rad.append(im); }
             else rad.append(el("span", "pdf-foto tom", "?"));
         }
-        rad.append(el("b", null, visning[i]), el("small", null, [e.fornavn, e.etternavn].filter(Boolean).join(" ")));
+        rad.append(el("b", null, visning[i]), el("small", null, [e.fornavn, e.etternavn].filter(Boolean).join(" ") + (t.klasser.length > 1 ? ` · ${e.kilde}` : "") + (status[i] ? ` · ${status[i]}` : "")));
         liste.append(rad);
     });
     inn.append(liste);
+    if (t.maal === "eksisterende" && t.kollisjoner) {
+        const lk = el("label", "pdf-bytt");
+        const cl = el("input"); cl.type = "checkbox"; cl.checked = !t.erOppdatering;
+        cl.addEventListener("change", () => { t.likeErAndre = cl.checked; tegnPdfForhandsvisning(); });
+        lk.append(cl, document.createTextNode(` ${t.kollisjoner} navn finnes i «${t.maalKlasse}» fra før – kryss av hvis det er andre elever (de får forbokstav i etternavnet)`));
+        inn.append(lk);
+    }
+    const mer = el("button", "knapp pdf-mer", "＋ Legg til en PDF til (slå sammen klasser)"); mer.type = "button";
+    mer.addEventListener("click", () => { pdfLeggTil = true; $("pdfFil").click(); });
+    inn.append(mer);
     inn.append(feilrapportKnapp());
     // Hvor skal elevene?
     const maal = el("div", "pdf-maal");
     const r1 = el("label"); const i1 = el("input"); i1.type = "radio"; i1.name = "pdfMaal"; i1.checked = t.maal === "ny";
     i1.addEventListener("change", () => { t.maal = "ny"; tegnPdfForhandsvisning(); });
     const navnFelt = el("input"); navnFelt.type = "text"; navnFelt.value = t.klassenavn; navnFelt.className = "pdf-klassenavn";
-    navnFelt.addEventListener("input", () => { t.klassenavn = navnFelt.value; });
-    navnFelt.addEventListener("focus", () => { if (t.maal !== "ny") { t.maal = "ny"; i1.checked = true; } });
+    const advarsel = el("small", "pdf-advarsel");
+    const sjekkNavn = () => { advarsel.textContent = data.klasser[(t.klassenavn || "").trim()] ? "Det finnes allerede en klasse med dette navnet – gi den et annet navn, eller velg «Legg til i» under." : ""; };
+    navnFelt.addEventListener("input", () => { t.klassenavn = navnFelt.value; sjekkNavn(); });
+    navnFelt.addEventListener("focus", () => { if (t.maal !== "ny") { t.maal = "ny"; i1.checked = true; tegnPdfForhandsvisning(); } });
     r1.append(i1, document.createTextNode(" Ny klasse: "), navnFelt);
     maal.append(r1);
-    if (data.aktivKlasse) {
-        const r2 = el("label"); const i2 = el("input"); i2.type = "radio"; i2.name = "pdfMaal"; i2.checked = t.maal === "aktiv";
-        i2.addEventListener("change", () => { t.maal = "aktiv"; });
-        r2.append(i2, document.createTextNode(` Legg til i «${data.aktivKlasse}»` + (antBilder ? " (oppdaterer bilder)" : "")));
+    if (t.maal === "ny") { sjekkNavn(); maal.append(advarsel); }
+    const klasser = Object.keys(data.klasser);
+    if (klasser.length) {
+        const r2 = el("label"); const i2 = el("input"); i2.type = "radio"; i2.name = "pdfMaal"; i2.checked = t.maal === "eksisterende";
+        i2.addEventListener("change", () => { t.maal = "eksisterende"; if (!data.klasser[t.maalKlasse]) t.maalKlasse = data.aktivKlasse || klasser[0]; tegnPdfForhandsvisning(); });
+        const velg = el("select", "pdf-klassevalg");
+        klasser.forEach(n => velg.append(new Option(n, n)));
+        velg.value = data.klasser[t.maalKlasse] ? t.maalKlasse : (data.aktivKlasse || klasser[0]);
+        velg.addEventListener("change", () => { t.maalKlasse = velg.value; t.maal = "eksisterende"; t.likeErAndre = null; tegnPdfForhandsvisning(); });
+        r2.append(i2, document.createTextNode(" Legg til i "), velg);
+        if (antBilder) r2.append(el("small", null, " (oppdaterer bilder)"));
         maal.append(r2);
     }
     inn.append(maal);
     const knapper = el("div", "dialog-knapper");
     const avbryt = el("button", "knapp", "Avbryt"); avbryt.type = "button"; avbryt.addEventListener("click", lukkPdf);
     const ok = el("button", "knapp primar", `Importer ${antall} elever`); ok.type = "button"; ok.disabled = !antall;
-    ok.addEventListener("click", () => fullforPdfImport(visning));
+    ok.addEventListener("click", () => fullforPdfImport(pdfVisning().visning));
     knapper.append(avbryt, ok);
     inn.append(knapper);
     $("pdfVindu").hidden = false;
@@ -5056,7 +5130,7 @@ function fullforPdfImport(visning) {
     if (!valgte.length) return;
     lesElevliste();
     let klassenavn, k;
-    if (t.maal === "ny" || !data.aktivKlasse) {
+    if (t.maal === "ny" || !data.klasser[t.maalKlasse]) {
         klassenavn = (t.klassenavn || "").trim() || "Ny klasse";
         if (data.klasser[klassenavn]) { let i = 2; while (data.klasser[`${klassenavn} (${i})`]) i++; klassenavn = `${klassenavn} (${i})`; }
         k = nyKlasseData();
@@ -5065,7 +5139,7 @@ function fullforPdfImport(visning) {
         const eks = data.klasser["Eksempelklasse"];
         if (eks && eks.elever.join() === EKSEMPEL_ELEVER.join() && !eks.partnere.length && !eks.adskilt.length) delete data.klasser["Eksempelklasse"];
     } else {
-        klassenavn = data.aktivKlasse;
+        klassenavn = t.maalKlasse;
         k = data.klasser[klassenavn];
         k.elever.push(...valgte.map(v => v.navn).filter(n => !k.elever.includes(n)));
     }
@@ -5137,7 +5211,11 @@ async function slettAlleBilder() {
     visToast("Elevbildene er slettet.");
 }
 
-$("pdfFil").addEventListener("change", function () { const f = this.files[0]; this.value = ""; if (f) importerPdfFil(f); });
+$("pdfFil").addEventListener("change", function () {
+    const filer = [...this.files]; this.value = "";
+    const leggTil = pdfLeggTil && pdfTilstand.elever.length > 0; pdfLeggTil = false;
+    if (filer.length) importerPdfFil(filer, leggTil);
+});
 $("pdfLukk").addEventListener("click", lukkPdf);
 $("btnPdfElever").addEventListener("click", () => handlinger.importerPdf());
 $("btnSlettBilder").addEventListener("click", slettAlleBilder);
