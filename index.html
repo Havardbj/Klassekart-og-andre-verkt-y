@@ -352,7 +352,7 @@ body.tavlemodus .tavle-kontroller{display:flex}
 .bidrag-skala{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .bidrag-skala .bidrag-sum{font-weight:600;font-size:11.5px}
 body.mobil .diagram-rad{grid-template-columns:1fr}
-@media print{body.skriver-logg .diagram-kort{break-inside:avoid}body.skriver-logg .pdf-seg{display:none}}
+@media print{body.skriver-logg .diagram-kort{break-inside:avoid}body.skriver-logg .pdf-seg,body.skriver-logg .slett-reg{display:none}}
 #loggUtskrift{display:none}
 .gjenkode{font:700 28px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.12em;background:#f1f5f9;border:2px dashed #94a3b8;border-radius:12px;padding:12px 18px;user-select:all}
 .backup-dialog{width:min(560px,100%)}
@@ -1082,7 +1082,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.7.4</p>
+            <p class="info-versjon">Klassekart · versjon 1.7.5</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -6012,6 +6012,13 @@ function byggRapport(boks, k, oppf, brukteKat, elev) {
         const p = el("span", "prikk"); p.style.background = katFarge(e.kat);
         const tekst = el("span"); tekst.append(p, document.createTextNode(" " + e.kat + (e.notat ? " – " + e.notat : "")));
         l.append(el("span", "logg-dato", `${formaterDato(e.dato)} ${e.tid || ""}`), tekst);
+        const x = el("button", "regel-fjern slett-reg", "×"); x.type = "button"; x.title = "Slett registreringen";
+        x.addEventListener("click", async () => {
+            if (!(await bekreft(`Slette registreringen «${e.kat}» for ${e.elev} (${formaterDato(e.dato)})?`))) return;
+            const l2 = loggFor(data.aktivKlasse), i = l2.indexOf(e); if (i > -1) l2.splice(i, 1);
+            lagreLogg(); tegnLogg();
+        });
+        l.append(x);
         boks.append(l);
     });
 }
