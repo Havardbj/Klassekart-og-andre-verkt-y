@@ -424,6 +424,8 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .bilde-linje .lenke{font-size:13px}
 .bilde-tips{margin:6px 0 0;font-size:12.5px;color:#7a5200;background:#fff8e1;border:1px solid #f3d27a;border-radius:8px;padding:6px 9px}
 .knapp.primar.fare{background:var(--bad);border-color:var(--bad)}
+.brukt-knapp{border-color:#bbf7d0;color:#166534;font-weight:600}
+.brukt-knapp.paa{background:#dcfce7;border-color:#22c55e}
 .avslor-knapp{background:#fff8e1;border-color:#f3d27a;color:#7a5200;font-weight:600}
 .avslor-knapp:hover{background:#fff0c2}
 .avslor{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:150;pointer-events:none}
@@ -930,6 +932,7 @@ body.mobil .sete.ledig{font-size:.8em}
           </div>
           <div class="verktoy-under">
             <button type="button" class="knapp primar stor" id="btnGenerer">🎲 Nytt kart</button>
+            <button type="button" class="knapp brukt-knapp" id="btnBrukt" hidden>✓ Bruk denne</button>
             <button type="button" class="knapp avslor-knapp" id="btnAvslor" title="Lager nytt kart / nye grupper og avslører dem én og én – fint å vise på tavla">✨ Avslør nye</button>
             <span class="skille-v" aria-hidden="true"></span>
             <label class="oppsettvelger" id="metodeVelger" title="Gjelder bare det verktøyet du står i">Fordeling
@@ -1083,7 +1086,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.8.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.8.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1517,10 +1520,9 @@ function parAv(sett) {
     }
     return par;
 }
-// Et kart / en gruppeinndeling telles først når den er tatt i bruk: vist med Avslør, Tavle eller Skriv ut,
-// eller har vært den gjeldende i minst 10 minutter. Utkast man blar forbi, telles aldri.
-const BRUKT_ETTER = 10 * 60 * 1000;
-const erTattIBruk = o => !!o && (o.brukt || !o.laget || Date.now() - o.laget >= BRUKT_ETTER);
+// Et kart / en gruppeinndeling telles først når den er tatt i bruk: «✓ Bruk denne», eller vist med
+// Avslør, Tavle eller Skriv ut. Utkast man blar forbi, telles aldri.
+const erTattIBruk = o => !!o && (o.brukt || !o.laget);
 function synkHistorikk(k) {
     if (!k || !k.historikk) return false;
     let endret = false;
@@ -1551,10 +1553,40 @@ function synkHistorikk(k) {
     return endret;
 }
 // Marker det som vises nå som brukt (Avslør, Tavle, Skriv ut)
+const gjeldende = k => iGruppemodus() ? k.grupper.siste : (rom() || {}).sisteKart;
 function markerBrukt() {
     const k = klasse(); if (!k) return;
-    const o = iGruppemodus() ? k.grupper.siste : (rom() || {}).sisteKart;
-    if (o && !o.brukt) { o.brukt = true; lagre(); }
+    const o = gjeldende(k);
+    if (o && !o.brukt) { o.brukt = true; if (o.laget) k.slettetHist = (k.slettetHist || []).filter(x => x !== o.laget); lagre(); tegnBruktKnapp(); }
+}
+// «✓ Bruk denne»: læreren bekrefter at dette kartet / disse gruppene brukes – trykk igjen for å angre
+function vekslBrukt() {
+    const k = klasse(); if (!k) return;
+    const o = gjeldende(k); if (!o) return;
+    if (o.brukt) {
+        o.brukt = false;
+        const type = iGruppemodus() ? "grupper" : "kart";
+        if (o.laget) {
+            k.historikk[type] = k.historikk[type].filter(e => e.id !== o.laget);
+            if (type === "grupper") k.grupper.rolleLogg = k.grupper.rolleLogg.filter(e => e.id !== o.laget);
+        } else { o.laget = Date.now(); }   // eldre kart uten id: gi det en, så det ikke telles automatisk
+        visToast("Tatt ut av statistikken.");
+    } else {
+        o.brukt = true;
+        if (o.laget) k.slettetHist = (k.slettetHist || []).filter(x => x !== o.laget);
+        visToast(iGruppemodus() ? "✓ Gruppene telles i samarbeidsstatistikken." : "✓ Kartet telles i samarbeidsstatistikken.");
+    }
+    lagre(); tegnBruktKnapp();
+    if (erMobilApp()) try { tegnMChips(); } catch (e) { }
+}
+function tegnBruktKnapp() {
+    const b = $("btnBrukt"); if (!b) return;
+    const k = klasse(), o = k && !iHjulmodus() ? gjeldende(k) : null;
+    b.hidden = !o;
+    const brukt = !!(o && erTattIBruk(o));
+    b.classList.toggle("paa", brukt);
+    b.textContent = brukt ? "✓ I bruk" : "✓ Bruk denne";
+    b.title = brukt ? "Telles i samarbeidsstatistikken – trykk for å ta det ut igjen" : "Trykk når dere bruker dette – da telles det i samarbeidsstatistikken (utkast telles ikke)";
 }
 // Sjekk jevnlig om gjeldende kart/grupper har blitt «tatt i bruk» (10 min)
 setInterval(() => {
@@ -2607,6 +2639,7 @@ const iGruppemodus = () => { const k = klasse(); return !!k && k.visning === "gr
 const iHjulmodus = () => { const k = klasse(); return !!k && k.visning === "hjul"; };
 
 function tegnKart() {
+    try { tegnBruktKnapp(); } catch (e) { }
     const grupper = iGruppemodus(), hjul = iHjulmodus();
     $("rom").hidden = grupper || hjul;
     $("tavleStrek").hidden = grupper || hjul;
@@ -3258,6 +3291,7 @@ function tegnVisningsvalg() {
     $("btnGenerer").textContent = tekst;
     $("btnGenerer2").textContent = tekst;
     $("btnAvslor").hidden = hjul;
+    tegnBruktKnapp();
     $("btnAvslor2").hidden = hjul;
     $("metodeVelger").hidden = hjul;
     $("oppsettVelger").hidden = grupper || hjul;
@@ -3791,6 +3825,7 @@ $("adskillNaboer").addEventListener("change", function () { klasse().innstilling
 
 $("btnGenerer").addEventListener("click", generer);
 $("btnAvslor").addEventListener("click", startAvsloring);
+$("btnBrukt").addEventListener("click", vekslBrukt);
 $("hjulMidt").addEventListener("click", snurrHjul);
 $("btnTid").addEventListener("click", vekslTidtaker);
 $("btnTid2").addEventListener("click", vekslTidtaker);
@@ -4092,6 +4127,11 @@ function tegnMChips() {
     const chip = (tekst, ved, kl = "") => boks.append(mKnapp(tekst, "m-chip " + kl, ved));
     const stor = t => t.charAt(0).toUpperCase() + t.slice(1);
     // Bilder av/på rett i verktøylinjen (vises når klassen har bilder på denne enheten)
+    const bruktChip = () => {
+        const o = gjeldende(k); if (!o) return;
+        const b = erTattIBruk(o);
+        chip(b ? "✓ I bruk" : "✓ Bruk denne", () => vekslBrukt(), b ? "ok" : "");
+    };
     const bildeChip = () => {
         if (!Object.keys(k.bilder || {}).length) return;
         chip(k.visBilder ? "📷 Bilder ✓" : "📷 Bilder", () => { k.visBilder = !k.visBilder; lagre(); tegnKart(); tegnMChips(); }, k.visBilder ? "paa" : "");
@@ -4101,10 +4141,12 @@ function tegnMChips() {
         chip(g.modus === "antall" ? `👥 ${g.antall} grupper ▾` : `👥 Grupper på ${g.storrelse} ▾`, () => aapneArk(grupperArk, { modal: false }));
         chip(`⚖️ ${stor(METODE_NAVN[g.metode])} ▾`, () => aapneArk(grupperArk, { modal: false }));
         bildeChip();
+        bruktChip();
     } else if (mFane === "kart") {
         chip(`🎲 ${stor(METODE_NAVN[k.innstillinger.metode])} ▾`, () => aapneArk(kartFordelingArk));
         chip(`🏫 ${rom().navn} ▾`, () => aapneArk(oppsettArk));
         bildeChip();
+        bruktChip();
     } else if (mFane === "hjul") {
         chip(k.hjul.fjern ? "✓ Ta ut den som trekkes" : "Alle blir på hjulet", () => { $("hjulFjern").click(); tegnMChips(); }, k.hjul.fjern ? "paa" : "");
         chip(iGruppehjul(k) ? "👥 Grupper ⇄" : "👤 Elever ⇄", () => settHjulmodus(iGruppehjul(k) ? "elever" : "grupper"), "paa");
@@ -5439,7 +5481,7 @@ function tegnStatistikk() {
 
     const antDager = st.dager.kart + st.dager.grupper;
     if (!antDager && !statValg.elev) {
-        inn.append(el("p", "stat-tom", "Ingen historikk i denne perioden ennå. Appen registrerer klassekart og grupper som faktisk blir brukt – vist med ✨ Avslør, Tavle eller Skriv ut, eller i bruk i minst 10 minutter. Utkast du blar forbi, telles ikke."));
+        inn.append(el("p", "stat-tom", "Ingen historikk i denne perioden ennå. Appen registrerer klassekart og grupper som faktisk blir brukt – når du trykker «✓ Bruk denne», eller viser dem med ✨ Avslør, Tavle eller Skriv ut. Utkast du blar forbi, telles ikke."));
         return;
     }
     if (statValg.elev) { tegnElevStat(inn, k, st, statValg.elev); return; }
@@ -5507,7 +5549,7 @@ function tegnStatistikk() {
     // Registreringer (kan fjernes hvis noe ble feil)
     const reg = el("details", "stat-reg");
     reg.append(el("summary", null, "Hva er registrert?"));
-    reg.append(el("p", "hjelp", "Utkast du blar forbi, telles ikke. Et kart eller en gruppeinndeling telles når du har vist den med ✨ Avslør, Tavle eller Skriv ut, eller når den har vært i bruk i 10 minutter."));
+    reg.append(el("p", "hjelp", "Utkast du blar forbi, telles ikke. Et kart eller en gruppeinndeling telles når du trykker «✓ Bruk denne», eller viser den med ✨ Avslør, Tavle eller Skriv ut."));
     const alle = [];
     for (const t of ["kart", "grupper"]) (k.historikk[t] || []).forEach(e => { if (!st.grense || e.dato >= st.grense) alle.push({ t, e }); });
     alle.sort((a, b) => (b.e.dato > a.e.dato) - (b.e.dato < a.e.dato) || (b.e.id || 0) - (a.e.id || 0));
