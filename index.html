@@ -1086,7 +1086,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.8.1</p>
+            <p class="info-versjon">Klassekart · versjon 1.8.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1520,9 +1520,8 @@ function parAv(sett) {
     }
     return par;
 }
-// Et kart / en gruppeinndeling telles først når den er tatt i bruk: «✓ Bruk denne», eller vist med
-// Avslør, Tavle eller Skriv ut. Utkast man blar forbi, telles aldri.
-const erTattIBruk = o => !!o && (o.brukt || !o.laget);
+// Et kart / en gruppeinndeling telles bare når læreren trykker «✓ Bruk denne». Alt annet er utkast.
+const erTattIBruk = o => !!o && !!o.brukt;
 function synkHistorikk(k) {
     if (!k || !k.historikk) return false;
     let endret = false;
@@ -3159,7 +3158,6 @@ function ferdigStokk() {
     vib([25, 40, 25]);
     fanfare();
     konfetti($(boks));
-    markerBrukt();
 }
 
 function startAvsloring() {
@@ -3615,7 +3613,6 @@ function roterBord(id) {
 const erTavle = () => document.body.classList.contains("tavlemodus");
 function startTavle() {
     if (redigerRom) { redigerRom = false; tegnRomfane(); tegnKart(); }
-    if (!iHjulmodus()) markerBrukt();
     document.body.classList.add("tavlemodus");
     const d = document.documentElement;
     if (d.requestFullscreen) d.requestFullscreen().catch(() => {});
@@ -3913,7 +3910,7 @@ else { try { if (localStorage.getItem("klassekart_meny") === "skjult") settMeny(
 $("btnGenerer2").addEventListener("click", generer);
 $("btnTavle").addEventListener("click", startTavle);
 $("btnAvsluttTavle").addEventListener("click", avsluttTavle);
-$("btnSkriv").addEventListener("click", () => { if (redigerRom) { redigerRom = false; tegnRomfane(); tegnKart(); } if (!iHjulmodus()) markerBrukt(); window.print(); });
+$("btnSkriv").addEventListener("click", () => { if (redigerRom) { redigerRom = false; tegnRomfane(); tegnKart(); } window.print(); });
 
 // På berøringsskjerm finnes ikke «hold musepekeren over» – første trykk viser det uskarpe feltet
 const kanSveve = window.matchMedia ? window.matchMedia("(hover: hover)").matches : true;
@@ -5481,7 +5478,7 @@ function tegnStatistikk() {
 
     const antDager = st.dager.kart + st.dager.grupper;
     if (!antDager && !statValg.elev) {
-        inn.append(el("p", "stat-tom", "Ingen historikk i denne perioden ennå. Appen registrerer klassekart og grupper som faktisk blir brukt – når du trykker «✓ Bruk denne», eller viser dem med ✨ Avslør, Tavle eller Skriv ut. Utkast du blar forbi, telles ikke."));
+        inn.append(el("p", "stat-tom", "Ingen historikk i denne perioden ennå. Appen registrerer klassekart og grupper du velger med «✓ Bruk denne». Utkast du blar forbi, telles ikke."));
         return;
     }
     if (statValg.elev) { tegnElevStat(inn, k, st, statValg.elev); return; }
@@ -5549,7 +5546,7 @@ function tegnStatistikk() {
     // Registreringer (kan fjernes hvis noe ble feil)
     const reg = el("details", "stat-reg");
     reg.append(el("summary", null, "Hva er registrert?"));
-    reg.append(el("p", "hjelp", "Utkast du blar forbi, telles ikke. Et kart eller en gruppeinndeling telles når du trykker «✓ Bruk denne», eller viser den med ✨ Avslør, Tavle eller Skriv ut."));
+    reg.append(el("p", "hjelp", "Utkast du blar forbi, telles ikke. Et kart eller en gruppeinndeling telles bare når du trykker «✓ Bruk denne»."));
     const alle = [];
     for (const t of ["kart", "grupper"]) (k.historikk[t] || []).forEach(e => { if (!st.grense || e.dato >= st.grense) alle.push({ t, e }); });
     alle.sort((a, b) => (b.e.dato > a.e.dato) - (b.e.dato < a.e.dato) || (b.e.id || 0) - (a.e.id || 0));
