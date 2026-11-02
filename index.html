@@ -1040,7 +1040,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.7.1</p>
+            <p class="info-versjon">Klassekart · versjon 1.7.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -5920,6 +5920,7 @@ function backupInnhold(medBilder, medLogg) {
 function registrerBackup() { auto.sist = new Date().toISOString(); auto.apninger = 0; lagreAuto(); skjulBackupPaaminnelse(); }
 function backupForfaller() {
     if (auto.modus === "av") return false;
+    if (auto.hyppighet === "hver") return auto.modus === "mappe" ? (auto.sist || "").slice(0, 10) !== idag() || auto.apninger >= 1 : auto.apninger >= 1;
     if (auto.hyppighet === "5") return auto.apninger >= 5;
     return !auto.sist || Date.now() - new Date(auto.sist).getTime() >= 7 * 24 * 3600 * 1000;
 }
@@ -5934,11 +5935,19 @@ async function skrivTilMappe(spoer) {
     const w = await fil.createWritable();
     await w.write(JSON.stringify(backupInnhold(auto.bilder, auto.logg), null, 2));
     await w.close();
-    // Behold de 8 nyeste automatiske backupene
+    // Behold én backup per dag den siste uken og én per uke de siste 8 ukene
     try {
         const filer = [];
         for await (const [n, h] of mappe.entries()) if (h.kind === "file" && /^klassekart-backup-\d{4}-\d\d-\d\d\.json$/.test(n)) filer.push(n);
-        filer.sort().reverse().slice(8).forEach(n => mappe.removeEntry(n).catch(() => { }));
+        filer.sort().reverse();
+        const behold = new Set(filer.slice(0, 7)), uker = new Set();
+        for (const n of filer) {
+            const d = new Date(n.slice(18, 28) + "T12:00:00"), alder = (Date.now() - d) / 864e5;
+            if (alder > 7 * 8 + 7) continue;
+            const uke = Math.floor(alder / 7);
+            if (!uker.has(uke)) { uker.add(uke); behold.add(n); }
+        }
+        filer.filter(n => !behold.has(n)).forEach(n => mappe.removeEntry(n).catch(() => { }));
     } catch (e) { }
     registrerBackup();
     return "ok";
@@ -6025,7 +6034,10 @@ function visBackupInnstillinger() {
         }
     }));
     if (auto.modus !== "av") {
-        rad("Hvor ofte", seg([["uke", "Hver uke"], ["5", "Hver 5. gang appen åpnes"]], "hyppighet"));
+        const ofte = [["uke", "Hver uke"], ["5", "Hver 5. gang"]];
+        if (auto.modus === "mappe") ofte.push(["hver", "Hver gang appen åpnes"]);
+        else if (auto.hyppighet === "hver") { auto.hyppighet = "uke"; lagreAuto(); }
+        rad("Hvor ofte", seg(ofte, "hyppighet"));
         const valg = el("div", "pdf-maal");
         for (const [nokkel, tekst] of [["bilder", "📷 Ta med elevbilder"], ["logg", "📝 Ta med lærerloggen"]]) {
             const l = el("label", "pdf-bytt"); const c = el("input"); c.type = "checkbox"; c.checked = !!auto[nokkel];
@@ -6035,7 +6047,7 @@ function visBackupInnstillinger() {
         inn.append(valg);
     }
     const info = auto.modus === "mappe"
-        ? `Backupen skrives av seg selv til mappen «${auto.mappeNavn || "?"}» (de 8 nyeste beholdes). Velg gjerne en mappe i skolens OneDrive, så har du den også på en annen maskin.`
+        ? `Backupen skrives av seg selv til mappen «${auto.mappeNavn || "?"}». Én per dag beholdes den siste uken, og én per uke de siste to månedene. Velg gjerne en mappe i skolens OneDrive, så har du den også på en annen maskin.`
         : auto.modus === "paaminnelse"
             ? (kanVelgeMappe() ? "Du får en påminnelse med én knapp. Vil du slippe å trykke, velg «Lagre i mappe»." : "Denne nettleseren kan ikke skrive filer av seg selv, så du får en påminnelse med én knapp for å ta backup.")
             : "Ingen automatisk backup. Husk å ta backup selv via ⋯-menyen.";
