@@ -344,6 +344,7 @@ body.mobil .avslor-bilde{width:92px;height:105px}
 .sete.hemmelig{background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35);color:rgba(0,0,0,.4);font-weight:800;font-size:1.15em;cursor:default}
 .sete.avslort{animation:avslort 1.3s ease;position:relative;z-index:3}
 .stokker .sete{pointer-events:none}
+#grupper .sete.tom-plass{min-height:2.1em;background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.2);box-shadow:none}
 .stokker .rolle{visibility:hidden}
 .stokker .sete.hopp{animation:hopp .16s ease-out}
 @keyframes hopp{0%{transform:translateY(-.25em) scale(.96);opacity:.55}100%{transform:none;opacity:1}}
@@ -981,7 +982,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.5</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.6</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2930,18 +2931,24 @@ function stokkSteg() {
     if (t >= 1) { ferdigStokk(); return; }
     const k = klasse();
     const kart = stokk.boks === "rom";
-    // I kartet er også de ledige pultene med i lotteriet
-    const seter = [...document.querySelectorAll(kart ? "#rom .sete.elev:not(.fravaer), #rom .sete.ledig" : "#grupper .sete.elev:not(.fravaer)")];
+    // Grupper: alle kortene får like mange plasser mens det stokkes, så størrelsene ikke røpes
+    if (!kart) {
+        const kort = [...document.querySelectorAll("#grupper .gruppe")];
+        const maks = Math.max(0, ...kort.map(g => g.querySelectorAll(".sete").length));
+        kort.forEach(g => { for (let n = g.querySelectorAll(".sete").length; n < maks; n++) g.append(el("div", "sete ledig tom-plass")); });
+    }
+    // Ledige plasser (pulter i kartet, ekstra plasser i gruppene) er med i lotteriet
+    const seter = [...document.querySelectorAll(kart ? "#rom .sete.elev:not(.fravaer), #rom .sete.ledig" : "#grupper .sete.elev:not(.fravaer), #grupper .sete.ledig")];
     const kø = blande(stokk.pool.slice());
     // Hvilke plasser som får et navn denne gangen (resten vises som ledige)
-    const medNavn = kart ? new Set(blande(seter.map((_, i) => i)).slice(0, kø.length)) : null;
+    const medNavn = new Set(blande(seter.map((_, i) => i)).slice(0, kø.length));
     // Ingen pult skal røpe at den blir tom – alle får farge mens det stokkes
     if (kart) document.querySelectorAll("#rom .bord.tomt").forEach(b => b.classList.remove("tomt"));
     let ni = 0;
     seter.forEach((s, i) => {
-        if (kart) {
+        {
             if (!medNavn.has(i)) {
-                if (!s.classList.contains("ledig")) { s.className = "sete ledig"; s.textContent = "ledig"; }
+                if (!s.classList.contains("ledig")) { s.className = "sete ledig" + (kart ? "" : " tom-plass"); s.textContent = kart ? "ledig" : ""; }
                 return;
             }
             if (!s.classList.contains("elev")) { s.className = "sete elev"; s.textContent = ""; s.append(el("span")); }
@@ -2951,10 +2958,6 @@ function stokkSteg() {
             let im = s.querySelector(".sete-foto");
             if (b) { if (!im) { im = el("img", "sete-foto"); im.alt = ""; s.prepend(im); s.classList.add("med-foto"); } im.src = b; }
             else if (im) { im.remove(); s.classList.remove("med-foto"); }
-        } else {
-            const navn = kø[i % kø.length];
-            const sp = s.querySelector(":scope > span"); if (sp) sp.textContent = navn;
-            const im = s.querySelector(".sete-foto"); if (im) { const b = elevBilde(navn, k); if (b) im.src = b; }
         }
         s.classList.remove("hopp"); void s.offsetWidth; s.classList.add("hopp");
     });
