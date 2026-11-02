@@ -160,6 +160,9 @@ textarea{width:100%;resize:vertical;line-height:1.45}
 .grupper{display:grid;gap:1.4em;justify-content:center;align-items:start}
 .gruppe{border:2px solid #333;border-radius:1em;padding:.6em .7em .8em;display:flex;flex-direction:column;gap:.4em;min-height:5em}
 .gruppe h3{margin:0 0 .15em;text-align:center;font-size:1em;color:rgba(0,0,0,.6)}
+.gruppe.med-bilder{display:grid;grid-template-columns:repeat(var(--c,2),5.6em);gap:.4em;align-content:start}
+.gruppe.med-bilder h3{grid-column:1/-1}
+.gruppe.med-bilder .sete{min-width:0;font-size:.95em}
 .gruppe .sete{flex:none}
 .gruppe.over{box-shadow:0 0 0 3px var(--accent)}
 .grupper-tom{color:var(--muted);text-align:center;margin:1.5em 0;font-size:1.1em}
@@ -982,7 +985,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.6.6</p>
+            <p class="info-versjon">Klassekart · versjon 1.6.7</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2354,9 +2357,30 @@ function tegnGrupper() {
     let kol = G <= 4 ? G : G <= 6 ? 3 : G <= 12 ? 4 : 5;
     if (window.matchMedia && window.matchMedia("(max-width:700px)").matches && !erTavle()) kol = Math.min(kol, 2);
     boks.style.gridTemplateColumns = `repeat(${kol}, 13em)`;
+    // Med bilder: elevene står ved siden av hverandre i kortet, og antall kort per rad velges så bildene blir størst mulig
+    const medBilder = !!(k.visBilder && Object.keys(k.bilder || {}).length);
+    let seterPerRad = 1;
+    if (medBilder) {
+        const ramme = $("kartRamme");
+        const W = erTavle() ? innerWidth - 40 : (ramme ? ramme.clientWidth : innerWidth), H = erTavle() ? innerHeight - 40 : (ramme ? ramme.clientHeight : innerHeight);
+        const maksG = Math.max(...siste.grupper.map(g => g.length));
+        const SW = 5.6, SH = 7.6, GAP = 0.4, KORT_B = 1.6, KORT_H = 2.6, MELLOM = 1.4, TOPP = 6, SIDE = 3;
+        let best = -1;
+        for (let c = 1; c <= maksG; c++) {
+            const kortB = c * SW + (c - 1) * GAP + KORT_B, kortH = Math.ceil(maksG / c) * (SH + GAP) + KORT_H;
+            for (let kk = 1; kk <= G; kk++) {
+                const rader = Math.ceil(G / kk);
+                const tw = kk * kortB + (kk - 1) * MELLOM + SIDE, th = rader * kortH + (rader - 1) * MELLOM + TOPP;
+                const skala = Math.min(W / tw, H / th);
+                if (skala > best + 1e-6) { best = skala; seterPerRad = c; kol = kk; }
+            }
+        }
+        boks.style.gridTemplateColumns = `repeat(${kol}, max-content)`;
+    }
 
     siste.grupper.forEach((medl, gi) => {
-        const kort = el("div", "gruppe");
+        const kort = el("div", "gruppe" + (medBilder ? " med-bilder" : ""));
+        if (medBilder) kort.style.setProperty("--c", seterPerRad);
         kort.style.background = FARGER[gi % FARGER.length];
         kort.append(el("h3", null, "Gruppe " + (gi + 1)));
         medl.forEach((navn, j) => {
