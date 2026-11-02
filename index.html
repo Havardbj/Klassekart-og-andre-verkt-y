@@ -1071,6 +1071,7 @@ body.mobil .sete.ledig{font-size:.8em}
             <p><b>Alt lagres bare på denne enheten.</b> Elevnavn, fravær, regler og nivå lagres i nettleseren på enheten du bruker. Ingenting sendes til noen server, og ingen andre kan se det.</p>
             <ul>
                 <li>Hver enhet har sin egen lagring. Flytt klasser mellom PC, mobil og nettbrett med <b>⋯ → Eksporter backup</b> og <b>Importer backup</b>.</li>
+                <li>Har du laget en PIN-kode i lærerloggen, <b>låses backupfilene</b> (AES-256). De kan bare åpnes i Klassekart med PIN-koden eller gjenopprettingskoden. Etter 5 feil PIN-forsøk kreves gjenopprettingskoden.</li>
                 <li>Backup-filen inneholder personopplysninger om elever. Oppbevar den som annen elevinformasjon, for eksempel i skolens OneDrive, ikke i privat e-post.</li>
                 <li><b>Lærerloggen</b> (⋯ → 📝 Lærerlogg) er låst med PIN, lagres for seg selv på enheten og vises aldri i kart, grupper, hjul eller på tavla. Den tas bare med i backup hvis du velger det. Loggen låses med Esc, når appen legges bort, og etter 5 minutter uten bruk.</li>
                 <li>Elevbilder (fra PDF-import eller kamera) lagres som små miniatyrer bare på enheten. Du velger selv om de skal være med i backupen, og kan slette dem under Elever.</li>
@@ -1082,7 +1083,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.7.5</p>
+            <p class="info-versjon">Klassekart · versjon 1.8.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1734,6 +1735,10 @@ $("importFil").addEventListener("change", function () {
     leser.onload = async () => {
         let innhold = null;
         try { innhold = JSON.parse(leser.result); } catch (e) { innhold = null; }
+        if (innhold && innhold.kryptert) {
+            innhold = await aapneLaastBackup(innhold);
+            if (!innhold) { this.value = ""; return; }
+        }
         const klasser = innhold && innhold.klasser && typeof innhold.klasser === "object" ? innhold.klasser : innhold;
         if (!klasser || typeof klasser !== "object" || Array.isArray(klasser) || !Object.keys(klasser).length) {
             visToast("Filen ser ikke ut som en klassekart-backup.", "feil");
@@ -5650,8 +5655,7 @@ function lukkLogg() {
     $("loggVindu").hidden = true;
     $("loggInnhold").innerHTML = "";
 }
-function tegnPin(modus, forste) {
-    if (modus === "laas" && !harGjenkode()) { /* eldre oppsett uten gjenopprettingskode: lages etter opplåsing */ }
+function tegnPin(modus, forste, etterGjen) {
     const inn = $("loggInnhold");
     inn.innerHTML = "";
     $("loggTittel").textContent = "📝 Lærerlogg";
@@ -5661,6 +5665,10 @@ function tegnPin(modus, forste) {
     const felt = el("input", "pin-felt"); felt.type = "password"; felt.inputMode = "numeric"; felt.maxLength = 4; felt.autocomplete = "off"; felt.placeholder = "••••";
     const melding = el("p", "pin-melding");
     boks.append(felt, melding);
+    if (modus === "laas" && pinSperret()) {
+        felt.disabled = true;
+        melding.textContent = "PIN-koden er sperret etter 5 feil forsøk. Bruk gjenopprettingskoden.";
+    }
     if (modus === "ny") boks.append(el("p", "hjelp", "Loggen lagres bare på denne enheten. Den vises aldri i kart, grupper, hjul eller på tavla, og tas ikke med i vanlig backup."));
     if (modus === "laas") {
         if (harGjenkode()) {
@@ -5683,18 +5691,30 @@ function tegnPin(modus, forste) {
         felt.value = felt.value.replace(/\D/g, "");
         if (felt.value.length < 4) return;
         const pin = felt.value;
-        if (modus === "ny") { tegnPin("bekreft", pin); return; }
+        const aapne = () => { loggApen = true; loggAktivitet(); tegnLogg(); };
+        if (modus === "ny") { tegnPin("bekreft", pin, etterGjen); return; }
         if (modus === "bekreft") {
-            if (pin !== forste) { tegnPin("ny"); visToast("Kodene var ikke like. Prøv igjen."); return; }
+            if (pin !== forste) { tegnPin("ny", null, etterGjen); visToast("Kodene var ikke like. Prøv igjen."); return; }
             try { localStorage.setItem(LOGG_PIN, await pinHash(pin)); } catch (e) { }
-            visNyGjenkode(() => { loggApen = true; loggAktivitet(); tegnLogg(); }); return;
+            nullstillPinFeil();
+            await oppdaterPinLaas(pin);
+            // Ny PIN etter gjenoppretting: behold samme gjenopprettingskode, så gamle backuper fortsatt kan åpnes
+            if (etterGjen && harGjenkode() && hentLokal(DK_GJEN)) { aapne(); return; }
+            visNyGjenkode(aapne); return;
         }
         let lagret = null; try { lagret = localStorage.getItem(LOGG_PIN); } catch (e) { }
         if (lagret === await pinHash(pin)) {
-            if (!harGjenkode()) { visNyGjenkode(() => { loggApen = true; loggAktivitet(); tegnLogg(); }); return; }
-            loggApen = true; loggAktivitet(); tegnLogg();
+            nullstillPinFeil();
+            if (!hentLokal(DK_PIN)) await oppdaterPinLaas(pin);
+            // Mangler gjenopprettingskode (eller den kan ikke låse opp backuper ennå): lag en ny
+            if (!harGjenkode() || !hentLokal(DK_GJEN)) { visNyGjenkode(aapne); return; }
+            aapne();
         }
-        else { melding.textContent = "Feil PIN-kode."; felt.value = ""; felt.classList.add("rist"); setTimeout(() => felt.classList.remove("rist"), 400); }
+        else {
+            const n = registrerPinFeil();
+            if (n >= 5) { tegnPin("laas"); visToast("For mange feil. Bruk gjenopprettingskoden.", "feil"); return; }
+            melding.textContent = `Feil PIN-kode (${n} av 5 forsøk).`; felt.value = ""; felt.classList.add("rist"); setTimeout(() => felt.classList.remove("rist"), 400);
+        }
     });
 }
 
@@ -6071,12 +6091,13 @@ const harGjenkode = () => { try { return !!localStorage.getItem(LOGG_GJEN); } ca
 async function visNyGjenkode(videre) {
     const kode = lagGjenkode();
     try { localStorage.setItem(LOGG_GJEN, await pinHash("gjen:" + rensKode(kode))); } catch (e) { }
+    await oppdaterGjenLaas(kode);
     const inn = $("loggInnhold");
     inn.innerHTML = "";
     const boks = el("div", "pin-boks");
     boks.append(el("p", null, "Din gjenopprettingskode for lærerloggen:"));
     boks.append(el("div", "gjenkode", kode));
-    boks.append(el("p", "hjelp", "Skriv den ned og legg den et trygt sted (ikke på denne enheten). Glemmer du PIN-koden, kan du lage en ny med denne koden uten å miste noe. Koden vises bare nå."));
+    boks.append(el("p", "hjelp", "Skriv den ned og legg den et trygt sted (ikke på denne enheten). Glemmer du PIN-koden – eller skriver feil 5 ganger – kan du lage en ny med denne koden uten å miste noe. Koden åpner også backupfilene. Den vises bare nå."));
     const rad = el("div", "dialog-knapper");
     const kopier = el("button", "knapp", "📋 Kopier"); kopier.type = "button";
     kopier.addEventListener("click", () => { try { navigator.clipboard.writeText(kode); visToast("Koden er kopiert."); } catch (e) { } });
@@ -6092,6 +6113,8 @@ async function brukGjenkode() {
     let lagret = null; try { lagret = localStorage.getItem(LOGG_GJEN); } catch (e) { }
     if (lagret && lagret === await pinHash("gjen:" + rensKode(svar))) {
         try { localStorage.removeItem(LOGG_PIN); } catch (e) { }
+        nullstillPinFeil();
+        if (!hentLokal(DK_GJEN)) await oppdaterGjenLaas(svar);
         visToast("Koden stemmer. Velg en ny PIN-kode.");
         tegnPin("ny", null, true);
         return true;
@@ -6138,6 +6161,7 @@ function backupForfaller() {
     return !auto.sist || Date.now() - new Date(auto.sist).getTime() >= 7 * 24 * 3600 * 1000;
 }
 async function skrivTilMappe(spoer) {
+    const innhold = await krypterBackup(backupInnhold(auto.bilder, auto.logg));
     const mappe = await idb("hent").catch(() => null);
     if (!mappe) return "ingen";
     let tillatelse = await mappe.queryPermission({ mode: "readwrite" });
@@ -6146,7 +6170,7 @@ async function skrivTilMappe(spoer) {
     const navn = `klassekart-backup-${idag()}.json`;
     const fil = await mappe.getFileHandle(navn, { create: true });
     const w = await fil.createWritable();
-    await w.write(JSON.stringify(backupInnhold(auto.bilder, auto.logg), null, 2));
+    await w.write(JSON.stringify(innhold, null, innhold.kryptert ? 0 : 2));
     await w.close();
     // Behold én backup per dag den siste uken og én per uke de siste 8 ukene
     try {
@@ -6228,9 +6252,10 @@ function visBackupPaaminnelse(tekst, knappTekst) {
     b.hidden = false;
 }
 function skjulBackupPaaminnelse() { const b = $("backupPaaminnelse"); if (b) b.hidden = true; }
-function lastNedBackup(innhold) {
+async function lastNedBackup(innhold) {
+    try { innhold = await krypterBackup(innhold); } catch (e) { visToast("Klarte ikke å låse backupen – den lagres ulåst.", "feil"); }
     const filnavn = `klassekart-backup-${idag()}.json`;
-    const blob = new Blob([JSON.stringify(innhold, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(innhold, null, innhold.kryptert ? 0 : 2)], { type: "application/json" });
     const erIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (erIOS && navigator.canShare) {
         try {
@@ -6249,7 +6274,7 @@ function lastNedBackup(innhold) {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     registrerBackup();
-    visToast("Backupen er lastet ned.");
+    visToast(innhold.kryptert ? "🔒 Backupen er lastet ned – låst med PIN-koden." : "Backupen er lastet ned.");
 }
 // Innstillinger
 function visBackupInnstillinger() {
@@ -6296,6 +6321,7 @@ function visBackupInnstillinger() {
             ? (kanVelgeMappe() ? "Du får en påminnelse med én knapp. Vil du slippe å trykke, velg «Lagre i mappe»." : "Denne nettleseren kan ikke skrive filer av seg selv, så du får en påminnelse med én knapp for å ta backup.")
             : "Ingen automatisk backup. Husk å ta backup selv via ⋯-menyen.";
     inn.append(el("p", "hjelp", info));
+    inn.append(el("p", "hjelp", kanLaaseBackup() ? "🔒 Backupfilene låses med PIN-koden din (og kan også åpnes med gjenopprettingskoden)." : "🔓 Backupfilene er ikke låst. Lag en PIN-kode i 📝 Lærerlogg, så låses de automatisk."));
     inn.append(el("p", "hjelp", "Sist backup: " + (auto.sist ? formaterDato(auto.sist.slice(0, 10)) : "aldri") + ". Backupen inneholder elevopplysninger – oppbevar den som annen elevinformasjon."));
     const knapper = el("div", "dialog-knapper");
     const naa = el("button", "knapp", "Ta backup nå"); naa.type = "button";
@@ -6311,6 +6337,82 @@ function visBackupInnstillinger() {
 $("backupLukk").addEventListener("click", () => { $("backupVindu").hidden = true; });
 $("backupVindu").addEventListener("click", e => { if (e.target === $("backupVindu")) $("backupVindu").hidden = true; });
 setTimeout(() => { sjekkAutoBackup().catch(() => { }); }, 3000);
+
+// ================= Låste backupfiler (AES-GCM) =================
+// En tilfeldig datanøkkel krypterer backupen. Nøkkelen ligger i filen to ganger: låst med PIN-koden
+// og låst med gjenopprettingskoden – så filen kan åpnes med én av dem. Automatisk backup kan
+// skrives uten at du taster noe, fordi datanøkkelen ligger på denne enheten.
+const DK_LAGRING = "klassekart_dk", DK_PIN = "klassekart_dk_pin", DK_GJEN = "klassekart_dk_gjen", PIN_FEIL = "klassekart_pin_feil";
+const kanKryptere = () => !!(window.crypto && crypto.subtle);
+const tilB64 = buf => { const b = new Uint8Array(buf); let s = ""; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+const fraB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+function hentLokal(n) { try { return localStorage.getItem(n); } catch (e) { return null; } }
+function settLokal(n, v) { try { if (v == null) localStorage.removeItem(n); else localStorage.setItem(n, v); } catch (e) { } }
+function datanokkel() {
+    let dk = hentLokal(DK_LAGRING);
+    if (!dk) { const b = new Uint8Array(32); crypto.getRandomValues(b); dk = tilB64(b); settLokal(DK_LAGRING, dk); }
+    return fraB64(dk);
+}
+async function passordNokkel(passord, salt, iter) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(passord), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function laasNokkel(passord) {   // datanøkkelen låst med et passord
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 250000;
+    const k = await passordNokkel(passord, salt, iter);
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k, datanokkel());
+    return JSON.stringify({ salt: tilB64(salt), iv: tilB64(iv), iter, ct: tilB64(ct) });
+}
+async function aapneNokkel(laast, passord) {
+    const l = typeof laast === "string" ? JSON.parse(laast) : laast;
+    const k = await passordNokkel(passord, fraB64(l.salt), l.iter || 250000);
+    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: fraB64(l.iv) }, k, fraB64(l.ct)));
+}
+// Kalles når PIN-koden settes eller låses opp, og når gjenopprettingskoden lages
+async function oppdaterPinLaas(pin) { if (kanKryptere()) try { settLokal(DK_PIN, await laasNokkel("pin:" + pin)); } catch (e) { } }
+async function oppdaterGjenLaas(kode) { if (kanKryptere()) try { settLokal(DK_GJEN, await laasNokkel("gjen:" + rensKode(kode))); } catch (e) { } }
+const kanLaaseBackup = () => kanKryptere() && !!hentLokal(DK_PIN);
+
+async function krypterBackup(innhold) {
+    if (!kanLaaseBackup()) return innhold;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const k = await crypto.subtle.importKey("raw", datanokkel(), "AES-GCM", false, ["encrypt"]);
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k, new TextEncoder().encode(JSON.stringify(innhold)));
+    return {
+        app: "klassekart", kryptert: true, versjon: 1, eksportert: innhold.eksportert,
+        merknad: "Låst Klassekart-backup. Åpnes i Klassekart med PIN-koden eller gjenopprettingskoden.",
+        pin: JSON.parse(hentLokal(DK_PIN)), gjen: hentLokal(DK_GJEN) ? JSON.parse(hentLokal(DK_GJEN)) : null,
+        iv: tilB64(iv), data: tilB64(ct)
+    };
+}
+async function dekrypterMedNokkel(fil, dk) {
+    const k = await crypto.subtle.importKey("raw", dk, "AES-GCM", false, ["decrypt"]);
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fraB64(fil.iv) }, k, fraB64(fil.data));
+    return JSON.parse(new TextDecoder().decode(pt));
+}
+const pinFeil = () => +hentLokal(PIN_FEIL) || 0;
+const pinSperret = () => pinFeil() >= 5;
+function registrerPinFeil() { settLokal(PIN_FEIL, String(pinFeil() + 1)); return pinFeil(); }
+function nullstillPinFeil() { settLokal(PIN_FEIL, null); }
+// Åpner en låst backup: PIN-kode (maks 5 forsøk), deretter gjenopprettingskode
+async function aapneLaastBackup(fil) {
+    if (!kanKryptere()) { visToast("Denne nettleseren kan ikke åpne låste backuper.", "feil"); return null; }
+    while (!pinSperret()) {
+        const svarP = spor("Backupen er låst. Skriv PIN-koden:", "");
+        $("dialogInput").type = "password";
+        const pin = await svarP; $("dialogInput").type = "text";
+        if (pin == null) return null;
+        try { const dk = await aapneNokkel(fil.pin, "pin:" + pin.trim()); nullstillPinFeil(); return await dekrypterMedNokkel(fil, dk); }
+        catch (e) { const n = registrerPinFeil(); visToast(n >= 5 ? "For mange feil. Bruk gjenopprettingskoden." : `Feil PIN-kode (${n} av 5 forsøk).`, "feil"); }
+    }
+    if (!fil.gjen) { visToast("Backupen har ingen gjenopprettingskode og kan ikke åpnes.", "feil"); return null; }
+    for (;;) {
+        const kode = await spor("For mange feil PIN-forsøk. Skriv gjenopprettingskoden (f.eks. ABCD-EFGH-JKLM):", "");
+        if (kode == null) return null;
+        try { const dk = await aapneNokkel(fil.gjen, "gjen:" + rensKode(kode)); nullstillPinFeil(); return await dekrypterMedNokkel(fil, dk); }
+        catch (e) { visToast("Gjenopprettingskoden stemmer ikke.", "feil"); }
+    }
+}
 
 </script>
 </body>
