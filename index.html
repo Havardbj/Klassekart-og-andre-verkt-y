@@ -1086,7 +1086,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.8.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.0</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1766,6 +1766,11 @@ $("importFil").addEventListener("change", function () {
     leser.onload = async () => {
         let innhold = null;
         try { innhold = JSON.parse(leser.result); } catch (e) { innhold = null; }
+        if (innhold && innhold.type === "synk") {
+            const r = await behandleSynkFil(innhold, true).catch(() => null);
+            visToast(r ? `📥 Hentet ${r.nye} registreringer fra mobilen.` : "Klarte ikke å hente registreringene.", r ? "" : "feil");
+            this.value = ""; return;
+        }
         if (innhold && innhold.kryptert) {
             innhold = await aapneLaastBackup(innhold);
             if (!innhold) { this.value = ""; return; }
@@ -5689,10 +5694,13 @@ function aapneLogg() {
     tegnPin(lagret ? "laas" : "ny");
 }
 function lukkLogg() {
+    const varApen = loggApen;
     loggApen = false;
     clearTimeout(loggTimer);
     $("loggVindu").hidden = true;
     $("loggInnhold").innerHTML = "";
+    // Mobil (eller enhet uten backupmappe): tilby å sende nye registreringer til PC-en
+    if (varApen && (erMobilApp() || auto.modus !== "mappe") && usendte() > 0) setTimeout(visSendPaaminnelse, 300);
 }
 function tegnPin(modus, forste, etterGjen) {
     const inn = $("loggInnhold");
@@ -5730,7 +5738,7 @@ function tegnPin(modus, forste, etterGjen) {
         felt.value = felt.value.replace(/\D/g, "");
         if (felt.value.length < 4) return;
         const pin = felt.value;
-        const aapne = () => { loggApen = true; loggAktivitet(); tegnLogg(); };
+        const aapne = () => { loggApen = true; loggAktivitet(); tegnLogg(); try { sjekkSynk(false); } catch (e) { } };
         if (modus === "ny") { tegnPin("bekreft", pin, etterGjen); return; }
         if (modus === "bekreft") {
             if (pin !== forste) { tegnPin("ny", null, etterGjen); visToast("Kodene var ikke like. Prøv igjen."); return; }
@@ -5790,6 +5798,17 @@ function tegnLogg() {
     per.addEventListener("change", () => { loggTilstand.periode = per.value; tegnLogg(); });
     topp.append(per);
     const laas = el("button", "knapp liten", "🔒 Lås (Esc)"); laas.type = "button"; laas.addEventListener("click", lukkLogg);
+    if (erMobilApp() || auto.modus !== "mappe") {
+        const n = usendte();
+        const send = el("button", "knapp liten", n ? `📤 Send til PC (${n})` : "📤 Send til PC"); send.type = "button";
+        send.title = "Lagre en låst fil i backupmappen i OneDrive – PC-en henter registreringene derfra";
+        send.addEventListener("click", sendTilPc);
+        topp.append(send);
+    } else {
+        const hent = el("button", "knapp liten", "📥 Hent fra mobil"); hent.type = "button";
+        hent.addEventListener("click", () => sjekkSynk(true));
+        topp.append(hent);
+    }
     topp.append(el("span", "fyll"), laas);
     inn.append(topp);
     if (loggTilstand.fane === "registrer") tegnLoggRegistrer(inn, k); else tegnLoggRapport(inn, k);
@@ -5860,7 +5879,7 @@ function tegnLoggRegistrer(inn, k) {
             const l = el("div", "logg-linje");
             l.append(el("span", "logg-dato", `${formaterDato(e.dato).replace(/^\S+ /, "")} ${e.tid || ""}`), el("span", null, e.kat + (e.notat ? " – " + e.notat : "")));
             const x = el("button", "regel-fjern", "×"); x.type = "button"; x.title = "Slett registreringen";
-            x.addEventListener("click", () => { const l2 = loggFor(data.aktivKlasse); const i = l2.indexOf(e); if (i > -1) l2.splice(i, 1); lagreLogg(); tegnLogg(); });
+            x.addEventListener("click", () => { slettLoggOppforing(data.aktivKlasse, e); tegnLogg(); });
             l.append(x); panel.append(l);
         });
     }
@@ -6074,8 +6093,7 @@ function byggRapport(boks, k, oppf, brukteKat, elev) {
         const x = el("button", "regel-fjern slett-reg", "×"); x.type = "button"; x.title = "Slett registreringen";
         x.addEventListener("click", async () => {
             if (!(await bekreft(`Slette registreringen «${e.kat}» for ${e.elev} (${formaterDato(e.dato)})?`))) return;
-            const l2 = loggFor(data.aktivKlasse), i = l2.indexOf(e); if (i > -1) l2.splice(i, 1);
-            lagreLogg(); tegnLogg();
+            slettLoggOppforing(data.aktivKlasse, e); tegnLogg();
         });
         l.append(x);
         boks.append(l);
@@ -6452,6 +6470,166 @@ async function aapneLaastBackup(fil) {
         catch (e) { visToast("Gjenopprettingskoden stemmer ikke.", "feil"); }
     }
 }
+
+// ================= Synk av lærerloggen: mobil → PC via OneDrive-mappen =================
+// Mobilen sender en låst fil (PIN) til backupmappen. PC-en henter nye registreringer derfra av seg selv.
+// Første gang en mobil sender, ber PC-en om PIN-koden; nøkkelen huskes, så resten går automatisk.
+const SYNK_SENDT = "klassekart_synk_sendt", SYNK_NOKLER = "klassekart_synk_nokler";
+const loggId = e => String(e.id);
+function slettLoggOppforing(klassenavn, e) {
+    const l = loggFor(klassenavn), i = l.indexOf(e);
+    if (i > -1) l.splice(i, 1);
+    logg.slettet = logg.slettet || [];
+    logg.slettet.push(loggId(e));
+    if (logg.slettet.length > 2000) logg.slettet = logg.slettet.slice(-2000);
+    lagreLogg();
+}
+const sistSendt = () => +hentLokal(SYNK_SENDT) || 0;
+function usendte() {
+    const fra = sistSendt();
+    let n = 0;
+    for (const l of Object.values(logg.klasser)) for (const e of l) if ((parseFloat(e.id) || 0) > fra) n++;
+    return n;
+}
+async function nokkelId(dk) {
+    const h = await crypto.subtle.digest("SHA-256", dk);
+    return tilB64(h).slice(0, 16);
+}
+async function lagSynkFil() {
+    if (!kanLaaseBackup()) throw new Error("Ingen PIN-lås");
+    const dk = datanokkel();
+    const innhold = { enhet: erMobilApp() ? "mobil" : "enhet", sendt: new Date().toISOString(), kategorier: logg.kategorier, klasser: logg.klasser, slettet: logg.slettet || [] };
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const k = await crypto.subtle.importKey("raw", dk, "AES-GCM", false, ["encrypt"]);
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k, new TextEncoder().encode(JSON.stringify(innhold)));
+    return {
+        app: "klassekart", type: "synk", versjon: 1, nokkel: await nokkelId(dk),
+        merknad: "Låst lærerlogg fra Klassekart. Hentes inn automatisk av Klassekart på PC-en.",
+        pin: JSON.parse(hentLokal(DK_PIN)), iv: tilB64(iv), data: tilB64(ct)
+    };
+}
+async function sendTilPc() {
+    let fil;
+    try { fil = await lagSynkFil(); }
+    catch (e) { visToast("Åpne lærerloggen med PIN-koden én gang først, så kan den sendes.", "feil"); return; }
+    const navn = `klassekart-synk-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.json`;
+    const blob = new Blob([JSON.stringify(fil)], { type: "application/json" });
+    const fileObj = new File([blob], navn, { type: "application/json" });
+    const ferdig = () => { settLokal(SYNK_SENDT, String(Date.now())); skjulBackupPaaminnelse(); visToast("📤 Sendt. PC-en henter registreringene neste gang Klassekart åpnes."); };
+    if (navigator.canShare && navigator.canShare({ files: [fileObj] })) {
+        try { await navigator.share({ files: [fileObj], title: "Klassekart – lærerlogg" }); ferdig(); return; }
+        catch (e) { if (e.name === "AbortError") return; }
+    }
+    // Uten deling: last ned filen og legg den i mappen selv
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = navn;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    ferdig();
+}
+function visSendPaaminnelse() {
+    const n = usendte(); if (!n) return;
+    const b = $("backupPaaminnelse");
+    b.innerHTML = "";
+    const t = el("div", "bp-tekst");
+    t.append(el("b", null, "📤 Send til PC?"), el("span", null, ` ${n} ${n === 1 ? "ny registrering" : "nye registreringer"} i lærerloggen. Lagre filen i backupmappen din i OneDrive, så henter PC-en dem.`));
+    const knapper = el("div", "installer-knapper");
+    const senere = el("button", "knapp", "Senere"); senere.type = "button"; senere.addEventListener("click", skjulBackupPaaminnelse);
+    const send = el("button", "knapp primar", "Send"); send.type = "button"; send.addEventListener("click", () => { skjulBackupPaaminnelse(); sendTilPc(); });
+    knapper.append(senere, send);
+    b.append(t, knapper);
+    b.hidden = false;
+}
+// ----- PC: hent inn synkfiler -----
+function kjenteNokler() { try { return JSON.parse(hentLokal(SYNK_NOKLER) || "{}"); } catch (e) { return {}; } }
+async function synkNokkel(fil, spoer) {
+    const kjent = kjenteNokler();
+    if (kjent[fil.nokkel]) return fraB64(kjent[fil.nokkel]);
+    // Egen nøkkel?
+    if (await nokkelId(datanokkel()) === fil.nokkel) return datanokkel();
+    if (!spoer) return null;
+    while (!pinSperret()) {
+        const svarP = spor("Nye registreringer fra mobilen. Skriv PIN-koden fra mobilen for å hente dem:", "");
+        $("dialogInput").type = "password";
+        const pin = await svarP; $("dialogInput").type = "text";
+        if (pin == null) return null;
+        try {
+            const dk = await aapneNokkel(fil.pin, "pin:" + pin.trim());
+            nullstillPinFeil();
+            kjent[fil.nokkel] = tilB64(dk); settLokal(SYNK_NOKLER, JSON.stringify(kjent));
+            return dk;
+        } catch (e) { const n = registrerPinFeil(); visToast(n >= 5 ? "For mange feil PIN-forsøk." : `Feil PIN-kode (${n} av 5 forsøk).`, "feil"); }
+    }
+    return null;
+}
+function flettSynk(innhold) {
+    let nye = 0;
+    const lokaltSlettet = new Set(logg.slettet || []);
+    const sletteListe = new Set((innhold.slettet || []).map(String));
+    for (const kn in innhold.klasser || {}) {
+        const l = loggFor(kn), ider = new Set(l.map(loggId));
+        for (const e of innhold.klasser[kn] || []) {
+            if (!e || !e.elev || ider.has(loggId(e)) || lokaltSlettet.has(loggId(e)) || sletteListe.has(loggId(e))) continue;
+            l.push(e); nye++;
+        }
+        l.sort((a, b) => (b.dato + (b.tid || "")).localeCompare(a.dato + (a.tid || "")));
+    }
+    // Sletting på mobilen gjelder også her
+    let slettet = 0;
+    for (const kn in logg.klasser) {
+        const før = logg.klasser[kn].length;
+        logg.klasser[kn] = logg.klasser[kn].filter(e => !sletteListe.has(loggId(e)));
+        slettet += før - logg.klasser[kn].length;
+    }
+    logg.slettet = unike([...(logg.slettet || []), ...sletteListe]).slice(-2000);
+    if (Array.isArray(innhold.kategorier)) logg.kategorier = unike([...logg.kategorier, ...innhold.kategorier.map(String)]).slice(0, 20);
+    lagreLogg();
+    return { nye, slettet };
+}
+async function behandleSynkFil(fil, spoer) {
+    const dk = await synkNokkel(fil, spoer);
+    if (!dk) return null;
+    return flettSynk(await dekrypterMedNokkel(fil, dk));
+}
+let synkPagar = false;
+async function sjekkSynk(spoer = false) {
+    if (synkPagar || !kanKryptere() || !kanVelgeMappe() || auto.modus !== "mappe") return;
+    synkPagar = true;
+    try {
+        const mappe = await idb("hent").catch(() => null);
+        if (!mappe) return;
+        let tillatelse = await mappe.queryPermission({ mode: "readwrite" });
+        if (tillatelse !== "granted" && spoer) tillatelse = await mappe.requestPermission({ mode: "readwrite" });
+        if (tillatelse !== "granted") return;
+        const filer = [];
+        for await (const [n, h] of mappe.entries()) if (h.kind === "file" && /^klassekart-synk-.*\.json$/.test(n)) filer.push([n, h]);
+        filer.sort((a, b) => a[0].localeCompare(b[0]));
+        let nye = 0, slettet = 0, venter = 0;
+        for (const [n, h] of filer) {
+            let fil;
+            try { fil = JSON.parse(await (await h.getFile()).text()); } catch (e) { continue; }
+            if (!fil || fil.type !== "synk") continue;
+            const r = await behandleSynkFil(fil, spoer).catch(() => null);
+            if (!r) { venter++; continue; }
+            nye += r.nye; slettet += r.slettet;
+            try { await mappe.removeEntry(n); } catch (e) { }
+        }
+        if (nye || slettet) { visToast(`📥 Hentet ${nye} ${nye === 1 ? "registrering" : "registreringer"} fra mobilen` + (slettet ? ` (${slettet} slettet)` : "") + "."); if (loggApen) tegnLogg(); }
+        if (venter && !spoer) {
+            const b = $("backupPaaminnelse");
+            if (b.hidden) {
+                b.innerHTML = "";
+                const t = el("div", "bp-tekst"); t.append(el("b", null, "📥 Nye registreringer fra mobilen"), el("span", null, " Skriv PIN-koden én gang, så hentes de automatisk fra nå av."));
+                const kn = el("div", "installer-knapper");
+                const s = el("button", "knapp", "Senere"); s.type = "button"; s.addEventListener("click", skjulBackupPaaminnelse);
+                const h2 = el("button", "knapp primar", "Hent"); h2.type = "button"; h2.addEventListener("click", () => { skjulBackupPaaminnelse(); sjekkSynk(true); });
+                kn.append(s, h2); b.append(t, kn); b.hidden = false;
+            }
+        }
+    } finally { synkPagar = false; }
+}
+setTimeout(() => sjekkSynk(false).catch(() => { }), 4500);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sjekkSynk(false).catch(() => { }); });
 
 </script>
 </body>
