@@ -354,6 +354,11 @@ body.tavlemodus .tavle-kontroller{display:flex}
 body.mobil .diagram-rad{grid-template-columns:1fr}
 @media print{body.skriver-logg .diagram-kort{break-inside:avoid}body.skriver-logg .pdf-seg,body.skriver-logg .slett-reg{display:none}}
 #loggUtskrift{display:none}
+.qr-boks{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px;overflow:auto}
+.qr-lerret{image-rendering:pixelated;border-radius:8px;box-shadow:0 0 0 1px var(--line)}
+.qr-teller{font-weight:700;color:#334155;min-height:1.2em;margin:0}
+.qr-video{width:min(560px,100%);border-radius:12px;background:#0f172a;transform:scaleX(-1)}
+.stor-valg{width:min(360px,100%);justify-content:center;padding:14px;font-size:15.5px}
 .gjenkode{font:700 28px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.12em;background:#f1f5f9;border:2px dashed #94a3b8;border-radius:12px;padding:12px 18px;user-select:all}
 .backup-dialog{width:min(560px,100%)}
 .bk-etikett{min-width:130px;font-weight:600}
@@ -1086,7 +1091,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.9.0</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.1</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -5694,6 +5699,7 @@ function aapneLogg() {
     tegnPin(lagret ? "laas" : "ny");
 }
 function lukkLogg() {
+    try { stoppKamera(); clearInterval(qrVisning); qrVisning = null; } catch (e) { }
     const varApen = loggApen;
     loggApen = false;
     clearTimeout(loggTimer);
@@ -5801,12 +5807,14 @@ function tegnLogg() {
     if (erMobilApp() || auto.modus !== "mappe") {
         const n = usendte();
         const send = el("button", "knapp liten", n ? `📤 Send til PC (${n})` : "📤 Send til PC"); send.type = "button";
-        send.title = "Lagre en låst fil i backupmappen i OneDrive – PC-en henter registreringene derfra";
-        send.addEventListener("click", sendTilPc);
+        send.title = "Send nye registreringer til PC-en med QR-kode eller fil";
+        send.addEventListener("click", velgSendemåte);
         topp.append(send);
-    } else {
-        const hent = el("button", "knapp liten", "📥 Hent fra mobil"); hent.type = "button";
-        hent.addEventListener("click", () => sjekkSynk(true));
+    }
+    if (!erMobilApp()) {
+        const hent = el("button", "knapp liten", "📷 Hent fra mobil"); hent.type = "button";
+        hent.title = "Les QR-koden fra mobilen med kameraet (eller hent filer fra backupmappen)";
+        hent.addEventListener("click", () => { loggAktivitet(); sjekkSynk(true).catch(() => { }); visQrMottak(); });
         topp.append(hent);
     }
     topp.append(el("span", "fyll"), laas);
@@ -6532,10 +6540,10 @@ function visSendPaaminnelse() {
     const b = $("backupPaaminnelse");
     b.innerHTML = "";
     const t = el("div", "bp-tekst");
-    t.append(el("b", null, "📤 Send til PC?"), el("span", null, ` ${n} ${n === 1 ? "ny registrering" : "nye registreringer"} i lærerloggen. Lagre filen i backupmappen din i OneDrive, så henter PC-en dem.`));
+    t.append(el("b", null, "📤 Send til PC?"), el("span", null, ` ${n} ${n === 1 ? "ny registrering" : "nye registreringer"} i lærerloggen som ikke er sendt.`));
     const knapper = el("div", "installer-knapper");
     const senere = el("button", "knapp", "Senere"); senere.type = "button"; senere.addEventListener("click", skjulBackupPaaminnelse);
-    const send = el("button", "knapp primar", "Send"); send.type = "button"; send.addEventListener("click", () => { skjulBackupPaaminnelse(); sendTilPc(); });
+    const send = el("button", "knapp primar", "Send"); send.type = "button"; send.addEventListener("click", () => { skjulBackupPaaminnelse(); velgSendemåte(); });
     knapper.append(senere, send);
     b.append(t, knapper);
     b.hidden = false;
@@ -6630,6 +6638,177 @@ async function sjekkSynk(spoer = false) {
 }
 setTimeout(() => sjekkSynk(false).catch(() => { }), 4500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sjekkSynk(false).catch(() => { }); });
+
+// ================= Overføring mobil → PC med QR-kode (låst med PIN) =================
+// Går helt utenom sky og jobbprofil-regler: mobilen viser QR-koder, PC-en leser dem med kameraet.
+const skriptLaster = {};
+function lastSkript(src, globalNavn) {
+    if (window[globalNavn]) return Promise.resolve();
+    if (skriptLaster[src]) return skriptLaster[src];
+    return (skriptLaster[src] = new Promise((ok, feil) => {
+        const sc = document.createElement("script"); sc.src = src;
+        sc.onload = () => ok(); sc.onerror = () => { delete skriptLaster[src]; feil(new Error(src)); };
+        document.head.append(sc);
+    }));
+}
+async function komprimer(tekst) {
+    const bytes = new TextEncoder().encode(tekst);
+    if (!window.CompressionStream) return { z: 0, b: bytes };
+    const s = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    return { z: 1, b: new Uint8Array(await new Response(s).arrayBuffer()) };
+}
+async function dekomprimer(bytes, z) {
+    if (!z) return new TextDecoder().decode(bytes);
+    const s = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return new TextDecoder().decode(await new Response(s).arrayBuffer());
+}
+// Pakker de nye registreringene (siden forrige sending) som en låst tekst
+async function lagQrTekst() {
+    if (!kanLaaseBackup()) throw new Error("Ingen PIN-lås");
+    const fra = sistSendt(), klasser = {};
+    for (const kn in logg.klasser) {
+        const nye = logg.klasser[kn].filter(e => (parseFloat(e.id) || 0) > fra).map(e => { const x = { ...e }; if (!x.notat) delete x.notat; return x; });
+        if (nye.length) klasser[kn] = nye;
+    }
+    const innhold = { kategorier: logg.kategorier, klasser, slettet: (logg.slettet || []).slice(-200) };
+    const { z, b } = await komprimer(JSON.stringify(innhold));
+    const dk = datanokkel(), iv = crypto.getRandomValues(new Uint8Array(12));
+    const k = await crypto.subtle.importKey("raw", dk, "AES-GCM", false, ["encrypt"]);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k, b));
+    const hode = { v: 1, z, n: await nokkelId(dk), p: JSON.parse(hentLokal(DK_PIN)) };
+    const kropp = new Uint8Array(iv.length + ct.length); kropp.set(iv); kropp.set(ct, iv.length);
+    return JSON.stringify(hode) + "~" + tilB64(kropp);
+}
+// ---------- Mobil: vis QR-kodene ----------
+let qrVisning = null;
+async function visQrSending() {
+    const n = usendte();
+    let tekst;
+    try { await lastSkript("lib/qr/qrcode.js", "qrcode"); tekst = await lagQrTekst(); }
+    catch (e) { visToast(kanLaaseBackup() ? "Klarte ikke å lage QR-koden." : "Åpne lærerloggen med PIN-koden én gang først.", "feil"); return; }
+    const STR = 400, id = Math.random().toString(36).slice(2, 6);
+    const deler = [];
+    for (let i = 0; i < tekst.length; i += STR) deler.push(tekst.slice(i, i + STR));
+    const koder = deler.map((d, i) => `KK1:${id}:${i + 1}/${deler.length}:${d}`);
+    $("loggVindu").hidden = false;
+    const inn = $("loggInnhold");
+    inn.innerHTML = "";
+    $("loggTittel").textContent = "📷 Send til PC med QR-kode";
+    const boks = el("div", "qr-boks");
+    boks.append(el("p", "hjelp", `${n} ${n === 1 ? "ny registrering" : "nye registreringer"} (låst med PIN-koden). På PC-en: åpne lærerloggen og trykk «📷 Hent fra mobil». Hold telefonen 20–40 cm fra kameraet.`));
+    const lerret = el("canvas", "qr-lerret");
+    const teller = el("p", "qr-teller");
+    boks.append(lerret, teller);
+    const knapper = el("div", "dialog-knapper");
+    const avbryt = el("button", "knapp", "Avbryt"); avbryt.type = "button";
+    const ferdig = el("button", "knapp primar", "✓ PC-en har hentet dem"); ferdig.type = "button";
+    knapper.append(avbryt, ferdig);
+    boks.append(knapper);
+    inn.append(boks);
+    let i = 0;
+    const tegn = () => {
+        const qr = qrcode(0, "L"); qr.addData(koder[i]); qr.make();
+        const m = qr.getModuleCount(), maks = Math.min(inn.clientWidth - 20, window.innerHeight * 0.55, 520);
+        const celle = Math.max(2, Math.floor(maks / (m + 8))), side = celle * (m + 8);
+        lerret.width = lerret.height = side;
+        const g = lerret.getContext("2d");
+        g.fillStyle = "#fff"; g.fillRect(0, 0, side, side); g.fillStyle = "#000";
+        for (let r = 0; r < m; r++) for (let c = 0; c < m; c++) if (qr.isDark(r, c)) g.fillRect((c + 4) * celle, (r + 4) * celle, celle, celle);
+        teller.textContent = koder.length > 1 ? `Kode ${i + 1} av ${koder.length} – vises på rad` : "";
+        i = (i + 1) % koder.length;
+    };
+    tegn();
+    clearInterval(qrVisning); qrVisning = koder.length > 1 ? setInterval(tegn, 900) : null;
+    const stopp = () => { clearInterval(qrVisning); qrVisning = null; lukkLogg(); };
+    avbryt.addEventListener("click", stopp);
+    ferdig.addEventListener("click", () => { settLokal(SYNK_SENDT, String(Date.now())); stopp(); visToast("✓ Merket som sendt."); });
+}
+// ---------- PC: les QR-kodene med kameraet ----------
+let qrKamera = null;
+function stoppKamera() {
+    if (!qrKamera) return;
+    qrKamera.aktiv = false;
+    try { qrKamera.strom.getTracks().forEach(t => t.stop()); } catch (e) { }
+    qrKamera = null;
+}
+async function visQrMottak() {
+    const inn = $("loggInnhold");
+    inn.innerHTML = "";
+    $("loggTittel").textContent = "📷 Hent fra mobil";
+    const boks = el("div", "qr-boks");
+    boks.append(el("p", "hjelp", "Åpne lærerloggen på mobilen og trykk «📤 Send til PC» → QR-kode. Hold mobilen foran kameraet."));
+    const video = el("video", "qr-video"); video.playsInline = true; video.muted = true;
+    const status = el("p", "qr-teller", "Starter kameraet …");
+    boks.append(video, status);
+    const knapper = el("div", "dialog-knapper");
+    const avbryt = el("button", "knapp", "Avbryt"); avbryt.type = "button";
+    avbryt.addEventListener("click", () => { stoppKamera(); tegnLogg(); });
+    knapper.append(avbryt); boks.append(knapper);
+    inn.append(boks);
+    try { await lastSkript("lib/qr/jsQR.js", "jsQR"); }
+    catch (e) { status.textContent = "QR-leseren kunne ikke lastes."; return; }
+    let strom;
+    try { strom = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); }
+    catch (e) { status.textContent = "Fikk ikke tilgang til kameraet. Tillat kamera for siden i nettleseren, eller bruk «Lagre som fil» på mobilen."; return; }
+    stoppKamera();
+    qrKamera = { strom, aktiv: true, deler: {} };
+    video.srcObject = strom; await video.play().catch(() => { });
+    status.textContent = "Ser etter QR-kode …";
+    const lerret = document.createElement("canvas"), g = lerret.getContext("2d", { willReadFrequently: true });
+    const skann = async () => {
+        if (!qrKamera || !qrKamera.aktiv || $("loggVindu").hidden) { stoppKamera(); return; }
+        if (video.videoWidth) {
+            const w = Math.min(960, video.videoWidth), h = Math.round(video.videoHeight * w / video.videoWidth);
+            lerret.width = w; lerret.height = h; g.drawImage(video, 0, 0, w, h);
+            const res = window.jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" });
+            const m = res && /^KK1:([a-z0-9]+):(\d+)\/(\d+):(.*)$/s.exec(res.data);
+            if (m) {
+                const [, id, nr, av, del] = m;
+                const d = (qrKamera.deler[id] = qrKamera.deler[id] || { av: +av, biter: {} });
+                d.biter[nr] = del;
+                const fått = Object.keys(d.biter).length;
+                status.textContent = d.av > 1 ? `Leser … ${fått} av ${d.av} koder` : "Leser …";
+                if (fått === d.av) {
+                    qrKamera.aktiv = false; stoppKamera();
+                    const tekst = Array.from({ length: d.av }, (_, i) => d.biter[i + 1]).join("");
+                    status.textContent = "Låser opp …";
+                    try {
+                        const r = await taImotQrTekst(tekst);
+                        if (r) { visToast(`📥 Hentet ${r.nye} ${r.nye === 1 ? "registrering" : "registreringer"} fra mobilen` + (r.slettet ? ` (${r.slettet} slettet)` : "") + ". Trykk «✓ PC-en har hentet dem» på mobilen."); tegnLogg(); }
+                        else tegnLogg();
+                    } catch (e) { visToast("Klarte ikke å lese overføringen. Prøv igjen.", "feil"); tegnLogg(); }
+                    return;
+                }
+            }
+        }
+        setTimeout(skann, 120);
+    };
+    skann();
+}
+async function taImotQrTekst(tekst) {
+    const skille = tekst.indexOf("~");
+    const hode = JSON.parse(tekst.slice(0, skille)), kropp = fraB64(tekst.slice(skille + 1));
+    const dk = await synkNokkel({ nokkel: hode.n, pin: hode.p }, true);
+    if (!dk) return null;
+    const k = await crypto.subtle.importKey("raw", dk, "AES-GCM", false, ["decrypt"]);
+    const pt = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: kropp.slice(0, 12) }, k, kropp.slice(12)));
+    return flettSynk(JSON.parse(await dekomprimer(pt, hode.z)));
+}
+// Velg måte å sende på (mobil)
+function velgSendemåte() {
+    const inn = $("loggInnhold");
+    $("loggVindu").hidden = false;
+    inn.innerHTML = "";
+    $("loggTittel").textContent = "📤 Send til PC";
+    const boks = el("div", "pin-boks");
+    const n = usendte();
+    boks.append(el("p", null, n ? `${n} ${n === 1 ? "ny registrering" : "nye registreringer"} siden sist.` : "Ingen nye registreringer siden sist – alt kan sendes på nytt likevel."));
+    const qr = el("button", "knapp primar stor-valg", "📷 Vis QR-kode for PC-kameraet"); qr.type = "button"; qr.addEventListener("click", visQrSending);
+    const fil = el("button", "knapp stor-valg", "📁 Lagre som fil (OneDrive)"); fil.type = "button"; fil.addEventListener("click", sendTilPc);
+    const tilbake = el("button", "lenke", "Tilbake"); tilbake.type = "button"; tilbake.addEventListener("click", () => { if (loggApen) tegnLogg(); else lukkLogg(); });
+    boks.append(qr, fil, tilbake);
+    inn.append(boks);
+}
 
 </script>
 </body>
