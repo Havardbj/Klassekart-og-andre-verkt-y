@@ -1091,7 +1091,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.9.1</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.2</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1369,7 +1369,7 @@ function normaliserRom(r) {
         for (const id in sk.plassering) {
             if (Array.isArray(sk.plassering[id])) p[id] = sk.plassering[id].map(x => (x && x !== "Ledig") ? String(x) : null);
         }
-        ut.sisteKart = { dato: String(sk.dato || idag()), plassering: p, merknader: Array.isArray(sk.merknader) ? sk.merknader : [], metode: METODE_NAVN[sk.metode] ? sk.metode : null, laget: +sk.laget || 0, brukt: !!sk.brukt };
+        ut.sisteKart = { dato: String(sk.dato || idag()), plassering: p, merknader: Array.isArray(sk.merknader) ? sk.merknader : [], metode: METODE_NAVN[sk.metode] ? sk.metode : null, laget: +sk.laget || 0, brukt: !!sk.brukt, forrige: +sk.forrige || null };
     }
     return ut;
 }
@@ -1434,7 +1434,7 @@ function normaliserKlasse(k) {
             merknader: Array.isArray(g.siste.merknader) ? g.siste.merknader : [],
             metode: METODE_NAVN[g.siste.metode] ? g.siste.metode : null,
             roller: g.siste.roller && typeof g.siste.roller === "object" ? Object.assign({}, g.siste.roller) : null,
-            laget: +g.siste.laget || 0, brukt: !!g.siste.brukt
+            laget: +g.siste.laget || 0, brukt: !!g.siste.brukt, forrige: +g.siste.forrige || null
         };
     }
     const rl = g.roller || {};
@@ -1577,11 +1577,28 @@ function vekslBrukt() {
         visToast("Tatt ut av statistikken.");
     } else {
         o.brukt = true;
+        if (o.forrige) {   // rettelse av noe som allerede var i bruk: erstatt det gamle
+            const type = iGruppemodus() ? "grupper" : "kart";
+            k.historikk[type] = k.historikk[type].filter(e => e.id !== o.forrige);
+            if (type === "grupper") k.grupper.rolleLogg = k.grupper.rolleLogg.filter(e => e.id !== o.forrige);
+            delete o.forrige;
+        }
         if (o.laget) k.slettetHist = (k.slettetHist || []).filter(x => x !== o.laget);
         visToast(iGruppemodus() ? "✓ Gruppene telles i samarbeidsstatistikken." : "✓ Kartet telles i samarbeidsstatistikken.");
     }
     lagre(); tegnBruktKnapp();
     if (erMobilApp()) try { tegnMChips(); } catch (e) { }
+}
+// Manuell flytting i noe som er «I bruk»: det blir et nytt utkast. Det som var i bruk, står igjen i
+// statistikken. Trykker du «Bruk denne» på det endrede, erstatter det det gamle (det var en rettelse).
+function endresManuelt(type) {
+    const k = klasse(); if (!k) return;
+    const o = type === "kart" ? (rom() || {}).sisteKart : k.grupper.siste;
+    if (!o || !o.brukt) return;
+    try { synkHistorikk(k); } catch (e) { }
+    o.forrige = o.laget || null;
+    o.laget = Date.now(); o.brukt = false;
+    visToast("Endret – nå er det et utkast. Trykk «✓ Bruk denne» hvis dere bruker den nye varianten.");
 }
 function tegnBruktKnapp() {
     const b = $("btnBrukt"); if (!b) return;
@@ -2577,6 +2594,7 @@ function tegnGrupper() {
                 e.preventDefault(); e.stopPropagation();
                 if (!gruppeDrag) return;
                 const fra = gruppeDrag; gruppeDrag = null;
+                endresManuelt("grupper");
                 const g = siste.grupper;
                 [g[fra.gi][fra.j], g[gi][j]] = [g[gi][j], g[fra.gi][fra.j]];
                 lagre(); tegnKart();
@@ -2593,6 +2611,7 @@ function tegnGrupper() {
             e.preventDefault();
             if (!gruppeDrag || gruppeDrag.gi === gi) return;
             const fra = gruppeDrag; gruppeDrag = null;
+            endresManuelt("grupper");
             const g = siste.grupper;
             const [navn] = g[fra.gi].splice(fra.j, 1);
             g[gi].push(navn);
@@ -3526,6 +3545,7 @@ function trykkSete(pos, navn) {
     const fra = valgt;
     valgt = null; skjulValg();
     if (pos.type === "kart") { byttPlass({ id: fra.id, i: fra.i }, { id: pos.id, i: pos.i }); return; }
+    endresManuelt("grupper");
     const g = klasse().grupper.siste.grupper;
     [g[fra.gi][fra.j], g[pos.gi][pos.j]] = [g[pos.gi][pos.j], g[fra.gi][fra.j]];
     lagre(); tegnKart();
@@ -3533,6 +3553,7 @@ function trykkSete(pos, navn) {
 function trykkGruppe(gi) {
     if (!valgt || valgt.type !== "gruppe") return;
     if (valgt.gi === gi) { avbrytValg(); return; }
+    endresManuelt("grupper");
     const siste = klasse().grupper.siste, g = siste.grupper;
     const [navn] = g[valgt.gi].splice(valgt.j, 1);
     g[gi].push(navn);
@@ -3587,6 +3608,7 @@ document.addEventListener("click", e => {
 function byttPlass(a, b) {
     const r = rom(), kart = gjeldendeKart(r);
     if (!kart || (a.id === b.id && a.i === b.i)) return;
+    endresManuelt("kart");
     const p = kart.plassering;
     if (!p[a.id]) p[a.id] = Array(r.seter).fill(null);
     if (!p[b.id]) p[b.id] = Array(r.seter).fill(null);
