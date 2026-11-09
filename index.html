@@ -354,6 +354,7 @@ body.tavlemodus .tavle-kontroller{display:flex}
 body.mobil .diagram-rad{grid-template-columns:1fr}
 @media print{body.skriver-logg .diagram-kort{break-inside:avoid}body.skriver-logg .pdf-seg,body.skriver-logg .slett-reg{display:none}}
 #loggUtskrift{display:none}
+#tidLyd.av{opacity:.55}
 .qr-boks{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px;overflow:auto}
 .qr-lerret{image-rendering:pixelated;border-radius:8px;box-shadow:0 0 0 1px var(--line)}
 .qr-teller{font-weight:700;color:#334155;min-height:1.2em;margin:0}
@@ -1091,7 +1092,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.9.3</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.4</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1101,7 +1102,7 @@ body.mobil .sete.ledig{font-size:.8em}
         <span>⏱ Tidtaker</span>
         <span class="fyll"></span>
         <button type="button" id="tidModus" title="Vis tiden som tall, skive eller begge">🕒</button>
-        <button type="button" id="tidLyd" title="Lyd av/på">🔊</button>
+        <button type="button" id="tidLyd" title="Lyd når tiden er ute">🔔</button>
         <button type="button" id="tidStor" title="Stor visning (for tavla)">⤢</button>
         <button type="button" id="tidSkjul" title="Skjul (tiden går videre)">–</button>
         <button type="button" id="tidLukk" title="Stopp og lukk">✕</button>
@@ -2849,8 +2850,16 @@ function messing(frekvens, start, varighet, styrke = 0.16) {
         o.connect(f); o.start(t); o.stop(t + varighet + 0.02);
     }
 }
+// Tidtakeren har sin egen lydbryter, uavhengig av lyden ved stokking
+let tidLydPaa = true;
+try { tidLydPaa = localStorage.getItem("klassekart_tidlyd") !== "av"; } catch (e) { }
 // Kort fanfare når nedtellingen er ferdig: ta-ta-ta-taaa
 function tidFanfare() {
+    if (!tidLydPaa) return;
+    const var_ = lydPaa; lydPaa = true;
+    try { spillTidFanfare(); } finally { lydPaa = var_; }
+}
+function spillTidFanfare() {
     const G4 = 392, C5 = 523.25, E5 = 659.25, G5 = 783.99;
     messing(G4, 0, 0.13); messing(G4, 0.15, 0.13); messing(G4, 0.30, 0.13);
     messing(C5, 0.45, 0.32);
@@ -2858,7 +2867,10 @@ function tidFanfare() {
     [C5, E5, G5].forEach(f => messing(f, 0.97, 0.9, 0.11));
 }
 function oppdaterLydknapp() {
-    for (const id of ["btnLyd", "tidLyd"]) {
+    $("tidLyd").textContent = tidLydPaa ? "🔔" : "🔕";
+    $("tidLyd").title = tidLydPaa ? "Fanfare når tiden er ute – trykk for å slå av" : "Ingen lyd når tiden er ute – trykk for å slå på";
+    $("tidLyd").classList.toggle("av", !tidLydPaa);
+    for (const id of ["btnLyd"]) {
         $(id).textContent = lydPaa ? "🔊" : "🔇";
         $(id).title = lydPaa ? "Lyd på – trykk for å slå av" : "Lyd av – trykk for å slå på";
     }
@@ -3885,7 +3897,12 @@ $("tidLukk").addEventListener("click", () => { tidNullstill(); $("tidtaker").cla
 $("tidStor").addEventListener("click", () => $("tidtaker").classList.toggle("stor"));
 $("tidModus").addEventListener("click", () => settTidModus(TID_MODI[(TID_MODI.indexOf(tidModus) + 1) % TID_MODI.length]));
 settTidModus("tall");
-$("tidLyd").addEventListener("click", vekslLyd);
+$("tidLyd").addEventListener("click", () => {
+    tidLydPaa = !tidLydPaa;
+    try { localStorage.setItem("klassekart_tidlyd", tidLydPaa ? "paa" : "av"); } catch (e) { }
+    oppdaterLydknapp();
+    visToast(tidLydPaa ? "🔔 Fanfare når tiden er ute" : "🔕 Ingen lyd når tiden er ute");
+});
 $("tidStart").addEventListener("click", () => { if (tid.slutt) tidPause(); else tidStart(); });
 $("tidNull").addEventListener("click", tidNullstill);
 try { $("tidOppgave").value = localStorage.getItem("klassekart_oppgave") || ""; } catch (e) { /* ikke viktig */ }
