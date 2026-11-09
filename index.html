@@ -1091,7 +1091,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.9.2</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.3</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -2833,6 +2833,30 @@ function fanfare() {
     tone(1046.5, 0.27, 0.5, "triangle", 0.22);
     tone(1318.5, 0.27, 0.5, "sine", 0.08);
 }
+// Messingaktig tone: sagtann gjennom et mykt filter, med et lite «blås» i starten
+function messing(frekvens, start, varighet, styrke = 0.16) {
+    const a = lyd(); if (!a) return;
+    const t = a.currentTime + start, g = a.createGain(), f = a.createBiquadFilter();
+    f.type = "lowpass"; f.Q.value = 1;
+    f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(2600, t + 0.06); f.frequency.exponentialRampToValueAtTime(1500, t + varighet);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(styrke, t + 0.025);
+    g.gain.setValueAtTime(styrke * 0.85, t + Math.max(0.03, varighet - 0.08));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + varighet);
+    f.connect(g); g.connect(a.destination);
+    for (const d of [-4, 4]) {
+        const o = a.createOscillator(); o.type = "sawtooth"; o.frequency.value = frekvens; o.detune.value = d;
+        o.connect(f); o.start(t); o.stop(t + varighet + 0.02);
+    }
+}
+// Kort fanfare når nedtellingen er ferdig: ta-ta-ta-taaa
+function tidFanfare() {
+    const G4 = 392, C5 = 523.25, E5 = 659.25, G5 = 783.99;
+    messing(G4, 0, 0.13); messing(G4, 0.15, 0.13); messing(G4, 0.30, 0.13);
+    messing(C5, 0.45, 0.32);
+    messing(G4, 0.80, 0.14);
+    [C5, E5, G5].forEach(f => messing(f, 0.97, 0.9, 0.11));
+}
 function oppdaterLydknapp() {
     for (const id of ["btnLyd", "tidLyd"]) {
         $(id).textContent = lydPaa ? "🔊" : "🔇";
@@ -2981,9 +3005,7 @@ function tidFerdig() {
     boks.classList.add("ferdig");
     $("tidMelding").textContent = "⏰ Tiden er ute!";
     if (boks.hidden) boks.hidden = false;
-    // Rolig «ding-dong» – som en liten bjelle
-    klokke(1046.5, 0);
-    klokke(784, 0.55);
+    tidFanfare();
     visTid();
 }
 function vekslTidtaker() {
