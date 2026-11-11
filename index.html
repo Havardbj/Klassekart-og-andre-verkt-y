@@ -824,7 +824,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <button type="button" data-handling="eksporter">💾 Eksporter backup</button>
                 <button type="button" data-handling="importer">📂 Importer backup</button>
                 <button type="button" data-handling="autoBackup">⚙️ Automatisk backup</button>
-                <button type="button" data-handling="importerPdf">📄 Importer klasseliste (PDF)</button>
+                <button type="button" data-handling="importerPdf">📄 Klasseliste fra PDF</button>
                 <hr>
                 <button type="button" data-handling="statistikk">📊 Samarbeid og statistikk</button>
                 <button type="button" data-handling="laererlogg">📝 Lærerlogg <small style="color:var(--muted)">Alt+L</small></button>
@@ -941,8 +941,8 @@ body.mobil .sete.ledig{font-size:.8em}
             <button type="button" class="knapp brukt-knapp" id="btnBrukt" hidden>✓ Bruk denne</button>
             <button type="button" class="knapp avslor-knapp" id="btnAvslor" title="Lager nytt kart / nye grupper og avslører dem én og én – fint å vise på tavla">✨ Avslør nye</button>
             <span class="skille-v" aria-hidden="true"></span>
-            <label class="oppsettvelger" id="metodeVelger" title="Gjelder bare det verktøyet du står i">Fordeling
-                <select id="metodeValg">
+            <label class="oppsettvelger" id="metodeVelger" title="Fordeling – gjelder bare det verktøyet du står i">
+                <select id="metodeValg" aria-label="Fordeling">
                     <option value="tilfeldig">Helt tilfeldig</option>
                     <option value="interesse_blandet">Bland nivå</option>
                     <option value="interesse_samlet">Like sammen</option>
@@ -1092,7 +1092,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.9.4</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.5</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1593,6 +1593,7 @@ function vekslBrukt() {
 // Manuell flytting i noe som er «I bruk»: det blir et nytt utkast. Det som var i bruk, står igjen i
 // statistikken. Trykker du «Bruk denne» på det endrede, erstatter det det gamle (det var en rettelse).
 function endresManuelt(type) {
+    settLokal("klassekart_tips_brukt", "1");   // har funnet ut av flyttingen – tipset trengs ikke lenger
     const k = klasse(); if (!k) return;
     const o = type === "kart" ? (rom() || {}).sisteKart : k.grupper.siste;
     if (!o || !o.brukt) return;
@@ -2658,7 +2659,7 @@ function tegnGruppeStatus() {
     for (const b of s.partnerBrudd) linje("advarsel", "⚠ Faste partnere i hver sin gruppe: ", sens(`${b.a} og ${b.b}`));
     if (s.ikkePlassert.length) linje("advarsel", `Ikke med i noen gruppe: ${s.ikkePlassert.join(", ")}. Nye grupper for å ta dem med.`);
     for (const m of (siste.merknader || [])) linje("info", m.sensitiv ? sens(m.tekst) : m.tekst);
-    linje("dempet", "Tips: Trykk på et navn og så på et annet navn (bytt) eller en annen gruppe (flytt). Der kan du også markere fravær. På PC kan du også dra.");
+    if (!hentLokal("klassekart_tips_brukt")) linje("dempet", "Tips: Trykk på et navn og så på et annet navn (bytt) eller en annen gruppe (flytt). Der kan du også markere fravær. På PC kan du også dra.");
 }
 
 // ================= Visning: klassekart eller grupper =================
@@ -2742,8 +2743,8 @@ function tegnHjulCanvas(navn, egneFarger) {
         const fs = Math.max(9, Math.min(str / 16, (w * R * 0.62) * 0.8));
         g.font = `600 ${fs}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
         g.fillStyle = "#1f2937"; g.textAlign = venstre ? "left" : "right"; g.textBaseline = "middle";
-        let t = navn[i];
         const maksB = R * 0.62;
+        let t = navnVarianter(navn[i]).find(x => g.measureText(x).width <= maksB) || navnVarianter(navn[i]).pop();
         while (t.length > 2 && g.measureText(t).width > maksB) t = t.slice(0, -2) + "…";
         g.fillText(t, venstre ? -(R - str * 0.04) : R - str * 0.04, 0);
         g.restore();
@@ -3191,7 +3192,7 @@ function stokkSteg() {
             }
             if (!s.classList.contains("elev")) { s.className = "sete elev"; s.textContent = ""; s.append(el("span")); }
             const navn = kø[ni++ % kø.length];
-            s.querySelector(":scope > span").textContent = navn;
+            const sp = s.querySelector(":scope > span"); sp.textContent = navn; delete sp.dataset.full;
             const b = k.visBilder ? elevBilde(navn, k) : null;
             let im = s.querySelector(".sete-foto");
             if (b) { if (!im) { im = el("img", "sete-foto"); im.alt = ""; s.prepend(im); s.classList.add("med-foto"); } im.src = b; }
@@ -3199,6 +3200,7 @@ function stokkSteg() {
         }
         s.classList.remove("hopp"); void s.offsetWidth; s.classList.add("hopp");
     });
+    try { tilpassNavn($(stokk.boks)); } catch (e) { }
     tikk();
     // Starter raskt og bremser gradvis opp, som et lykkehjul
     const forsinkelse = 55 + 520 * Math.pow(t, 2.4);
@@ -3451,7 +3453,7 @@ function tegnRomStatus() {
     for (const b of s.partnerBrudd) linje("advarsel", "⚠ Faste partnere som ikke sitter sammen: ", sens(`${b.a} og ${b.b}`));
     if (s.ikkePlassert.length) linje("advarsel", `Ikke med i kartet: ${s.ikkePlassert.join(", ")}. Nytt kart for å ta dem med, eller dra dem inn på en ledig plass.`);
     for (const m of (kart.merknader || [])) linje("info", m.sensitiv ? sens(m.tekst) : m.tekst);
-    if (s.plassert) linje("dempet", "Tips: Trykk på et navn og så på en annen plass for å bytte. Der kan du også markere fravær. På PC kan du også dra.");
+    if (s.plassert && !hentLokal("klassekart_tips_brukt")) linje("dempet", "Tips: Trykk på et navn og så på en annen plass for å bytte. Der kan du også markere fravær. På PC kan du også dra.");
 }
 
 function tegnRomkart() {
@@ -3690,6 +3692,27 @@ function avsluttTavle() {
     tilpassKart();
 }
 // Skalerer hele kartet (alt er målt i em) så alle bord alltid får plass i vinduet
+// Lange navn: heller «Nora B.» eller «Nora» enn «Nora Ba…»
+function navnVarianter(navn) {
+    const d = String(navn).trim().split(/\s+/), v = [navn];
+    if (d.length > 1) {
+        const k = klasse(), fornavn = d[0];
+        const delt = k && k.elever.filter(n => n.split(/\s+/)[0] === fornavn).length > 1;
+        v.push(fornavn + " " + d[d.length - 1][0] + ".");
+        if (!delt) v.push(fornavn);
+    }
+    return v;
+}
+function tilpassNavn(rot) {
+    (rot || document).querySelectorAll(".sete.elev > span").forEach(sp => {
+        const full = sp.dataset.full && sp.dataset.full.startsWith(sp.textContent.replace(/ \S\.$/, "")) ? sp.dataset.full : sp.textContent;
+        if (!full) return;
+        sp.dataset.full = full;
+        const v = navnVarianter(full);
+        for (const t of v) { sp.textContent = t; if (sp.scrollWidth <= sp.clientWidth + 1) break; }
+        sp.parentElement.title = full;
+    });
+}
 function tilpassKart() {
     const ark = $("kartArk"), ramme = $("kartRamme");
     if (!ark || !ramme) return;
@@ -3722,6 +3745,7 @@ function tilpassKart() {
         ark.style.marginBottom = -(h * (1 - f)) + "px";    // ingen tom plass under
     }
     if (iHjulmodus() && !hjulSnurrer) { const k = klasse(), n = hjulNavn(k); tegnHjulCanvas(n, hjulFarger(k, n)); }
+    try { tilpassNavn(); } catch (e) { }
     if (erMobilApp() && mFane === "kart") {   // vis/skjul tipset om å snu telefonen
         const vis = !!document.querySelector("#mChips .m-chip.info") && /Snu/.test($("mChips").textContent);
         const t = ark.style.transform.match(/scale\(([\d.]+)\)/);
@@ -4434,7 +4458,7 @@ function klasseArk(inn) {
     h("💾 Eksporter backup", "eksporter");
     h("📂 Importer backup", "importer");
     h("⚙️ Automatisk backup", "autoBackup");
-    h("📄 Importer klasseliste (PDF)", "importerPdf");
+    h("📄 Klasseliste fra PDF", "importerPdf");
     if (installerKanVises()) inn.append(mKnapp("📲 Installer som app", "m-handling-rad", () => { lukkArk(); visInstaller(true); }));
     inn.append(mKnapp("📊 Samarbeid og statistikk", "m-handling-rad", () => { lukkArk(); visStatistikk(); }));
     inn.append(mKnapp("📝 Lærerlogg", "m-handling-rad", () => { lukkArk(); aapneLogg(); }));
