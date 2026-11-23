@@ -1092,7 +1092,7 @@ body.mobil .sete.ledig{font-size:.8em}
                 <b>Delt eller lånt enhet?</b> Slett alt før du gir den fra deg.
                 <button type="button" class="knapp liten" id="btnSlettAlt">🗑️ Slett alle klasser på denne enheten</button>
             </div>
-            <p class="info-versjon">Klassekart · versjon 1.9.5</p>
+            <p class="info-versjon">Klassekart · versjon 1.9.6</p>
         </div>
         <div class="dialog-knapper"><button type="button" class="knapp primar" id="infoOk">OK</button></div>
     </div>
@@ -1258,14 +1258,14 @@ function visToast(tekst, type = "") {
 }
 
 // Egne dialogvinduer – await spor()/await bekreft() blokkeres i mange forhåndsvisninger (Teams, e-post, innebygde visere)
-function visDialog(tekst, standard, medFelt) {
+function visDialog(tekst, standard, medFelt, okTekst) {
     return new Promise(resolve => {
         const d = $("dialog"), inp = $("dialogInput"), ok = $("dialogOk"), avbryt = $("dialogAvbryt");
         $("dialogTekst").textContent = tekst;
         inp.hidden = !medFelt;
         inp.value = standard || "";
         const fare = !medFelt && /slett/i.test(tekst);
-        ok.textContent = medFelt ? "OK" : (fare ? "Slett" : "Ja");
+        ok.textContent = okTekst || (medFelt ? "OK" : (fare ? "Slett" : "Ja"));
         ok.classList.toggle("fare", fare);
         d.hidden = false;
         if (medFelt) { inp.focus(); inp.select(); } else ok.focus();
@@ -1288,7 +1288,23 @@ function visDialog(tekst, standard, medFelt) {
     });
 }
 const spor = (tekst, standard) => visDialog(tekst, standard, true);
-const bekreft = tekst => visDialog(tekst, "", false);
+const bekreft = (tekst, okTekst) => visDialog(tekst, "", false, okTekst);
+// Manuell flytting som bryter en regel: spør først. Reglene vises aldri på tavla – bare her, når du selv flytter.
+async function godtaRegelbrudd(type, foer, etter) {
+    const k = klasse();
+    const st = d => type === "kart" ? regelstatus(k, rom(), d) : gruppeStatus(k, d);
+    const fs = st(foer), es = st(etter);
+    const gamle = new Set([...fs.sepBrudd.map(b => "s" + parNokkel(b.a, b.b)), ...fs.partnerBrudd.map(b => "p" + parNokkel(b.a, b.b))]);
+    const sep = es.sepBrudd.filter(b => !gamle.has("s" + parNokkel(b.a, b.b)));
+    const par = es.partnerBrudd.filter(b => !gamle.has("p" + parNokkel(b.a, b.b)));
+    if (!sep.length && !par.length) return true;
+    const hvor = type === "kart" ? (b => b.hvor || "ved samme bord") : (() => "i samme gruppe");
+    const linjer = [
+        ...sep.map(b => `${b.a} og ${b.b} skal holdes adskilt, men havner ${hvor(b)}.`),
+        ...par.map(b => `${b.a} og ${b.b} er faste partnere, men blir skilt.`)
+    ];
+    return await bekreft("⚠ " + linjer.join("\n") + "\n\nVil du gjøre det likevel?", "Ja, gjør det likevel");
+}
 
 // ================= Datamodell =================
 
@@ -2596,10 +2612,9 @@ function tegnGrupper() {
                 e.preventDefault(); e.stopPropagation();
                 if (!gruppeDrag) return;
                 const fra = gruppeDrag; gruppeDrag = null;
-                endresManuelt("grupper");
-                const g = siste.grupper;
+                const g = siste.grupper.map(x => [...x]);
                 [g[fra.gi][fra.j], g[gi][j]] = [g[gi][j], g[fra.gi][fra.j]];
-                lagre(); tegnKart();
+                settGrupperManuelt(g);
             });
             kort.append(s);
         });
@@ -2613,12 +2628,10 @@ function tegnGrupper() {
             e.preventDefault();
             if (!gruppeDrag || gruppeDrag.gi === gi) return;
             const fra = gruppeDrag; gruppeDrag = null;
-            endresManuelt("grupper");
-            const g = siste.grupper;
+            const g = siste.grupper.map(x => [...x]);
             const [navn] = g[fra.gi].splice(fra.j, 1);
             g[gi].push(navn);
-            siste.grupper = g.filter(x => x.length);
-            lagre(); tegnKart();
+            settGrupperManuelt(g);
         });
         boks.append(kort);
     });
@@ -2650,13 +2663,9 @@ function tegnGruppeStatus() {
     const deler = [`${s.plassert} elever i ${siste.grupper.length} grupper`];
     const gjG = gjentakInfo(k, "grupper", siste.grupper); if (gjG) deler.push(gjG);
     if (s.borte) deler.push(`${s.borte} markert borte`);
-    const harRegler = k.partnere.length + k.adskilt.length > 0;
     if (siste.metode && siste.metode !== "tilfeldig") deler.push("fordelt: " + METODE_NAVN[siste.metode]);
-    if (!s.sepBrudd.length && !s.partnerBrudd.length) linje("ok", "✓ " + deler.join(" · ") + (harRegler ? " · alle regler er oppfylt" : ""));
-    else linje("info", deler.join(" · "));
+    linje("ok", "✓ " + deler.join(" · "));
     metodeStatus(k, siste.metode, linje, "Nye grupper");
-    for (const b of s.sepBrudd) linje("advarsel", "⚠ Skal holdes adskilt, men er i samme gruppe: ", sens(`${b.a} og ${b.b}`));
-    for (const b of s.partnerBrudd) linje("advarsel", "⚠ Faste partnere i hver sin gruppe: ", sens(`${b.a} og ${b.b}`));
     if (s.ikkePlassert.length) linje("advarsel", `Ikke med i noen gruppe: ${s.ikkePlassert.join(", ")}. Nye grupper for å ta dem med.`);
     for (const m of (siste.merknader || [])) linje("info", m.sensitiv ? sens(m.tekst) : m.tekst);
     if (!hentLokal("klassekart_tips_brukt")) linje("dempet", "Tips: Trykk på et navn og så på et annet navn (bytt) eller en annen gruppe (flytt). Der kan du også markere fravær. På PC kan du også dra.");
@@ -3443,14 +3452,9 @@ function tegnRomStatus() {
     const deler = [`${s.plassert} elever plassert`];
     const gjK = gjentakInfo(k, "kart", Object.values(kart.plassering)); if (gjK) deler.push(gjK);
     if (s.borteIKart) deler.push(`${s.borteIKart} markert borte`);
-    const harRegler = k.partnere.length + k.adskilt.length > 0;
-    const brudd = s.sepBrudd.length + s.partnerBrudd.length;
     if (kart.metode && kart.metode !== "tilfeldig") deler.push("fordelt: " + METODE_NAVN[kart.metode]);
-    if (!brudd) linje("ok", "✓ " + deler.join(" · ") + (harRegler ? " · alle regler er oppfylt" : ""));
-    else linje("info", deler.join(" · "));
+    linje("ok", "✓ " + deler.join(" · "));
     metodeStatus(k, kart.metode, linje, "Nytt kart");
-    for (const b of s.sepBrudd) linje("advarsel", `⚠ Skal holdes adskilt, men sitter ${b.hvor}: `, sens(`${b.a} og ${b.b}`));
-    for (const b of s.partnerBrudd) linje("advarsel", "⚠ Faste partnere som ikke sitter sammen: ", sens(`${b.a} og ${b.b}`));
     if (s.ikkePlassert.length) linje("advarsel", `Ikke med i kartet: ${s.ikkePlassert.join(", ")}. Nytt kart for å ta dem med, eller dra dem inn på en ledig plass.`);
     for (const m of (kart.merknader || [])) linje("info", m.sensitiv ? sens(m.tekst) : m.tekst);
     if (s.plassert && !hentLokal("klassekart_tips_brukt")) linje("dempet", "Tips: Trykk på et navn og så på en annen plass for å bytte. Der kan du også markere fravær. På PC kan du også dra.");
@@ -3581,21 +3585,25 @@ function trykkSete(pos, navn) {
     const fra = valgt;
     valgt = null; skjulValg();
     if (pos.type === "kart") { byttPlass({ id: fra.id, i: fra.i }, { id: pos.id, i: pos.i }); return; }
-    endresManuelt("grupper");
-    const g = klasse().grupper.siste.grupper;
+    const g = klasse().grupper.siste.grupper.map(x => [...x]);
     [g[fra.gi][fra.j], g[pos.gi][pos.j]] = [g[pos.gi][pos.j], g[fra.gi][fra.j]];
+    settGrupperManuelt(g);
+}
+async function settGrupperManuelt(ny) {
+    const siste = klasse().grupper.siste;
+    if (!(await godtaRegelbrudd("grupper", siste.grupper, ny))) { tegnKart(); return; }
+    endresManuelt("grupper");
+    siste.grupper = ny.filter(x => x.length);
     lagre(); tegnKart();
 }
 function trykkGruppe(gi) {
     if (!valgt || valgt.type !== "gruppe") return;
     if (valgt.gi === gi) { avbrytValg(); return; }
-    endresManuelt("grupper");
-    const siste = klasse().grupper.siste, g = siste.grupper;
+    const g = klasse().grupper.siste.grupper.map(x => [...x]);
     const [navn] = g[valgt.gi].splice(valgt.j, 1);
     g[gi].push(navn);
-    siste.grupper = g.filter(x => x.length);
     valgt = null; skjulValg();
-    lagre(); tegnKart();
+    settGrupperManuelt(g);
 }
 function visValg() {
     const k = klasse(), linje = $("valgLinje");
@@ -3641,14 +3649,16 @@ document.addEventListener("click", e => {
     if (valgt && !e.target.closest("#valgLinje, .sete, .gruppe")) avbrytValg();
 });
 
-function byttPlass(a, b) {
+async function byttPlass(a, b) {
     const r = rom(), kart = gjeldendeKart(r);
     if (!kart || (a.id === b.id && a.i === b.i)) return;
-    endresManuelt("kart");
-    const p = kart.plassering;
+    const p = JSON.parse(JSON.stringify(kart.plassering));
     if (!p[a.id]) p[a.id] = Array(r.seter).fill(null);
     if (!p[b.id]) p[b.id] = Array(r.seter).fill(null);
     [p[a.id][a.i], p[b.id][b.i]] = [p[b.id][b.i], p[a.id][a.i]];
+    if (!(await godtaRegelbrudd("kart", kart.plassering, p))) { tegnKart(); return; }
+    endresManuelt("kart");
+    kart.plassering = p;
     lagre(); tegnKart();
 }
 
